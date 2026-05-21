@@ -5,15 +5,12 @@ from werkzeug.security import generate_password_hash
 
 app = create_app()
 with app.app_context():
-    # Roles
-    roles = ['super_admin', 'principal', 'registrar', 'finance_officer',
-             'lecturer', 'student', 'librarian', 'hostel_manager', 'hr_manager']
+    roles = ['super_admin', 'principal', 'registrar', 'finance_officer', 'lecturer', 'student', 'librarian', 'hostel_manager', 'hr_manager']
     for r in roles:
         if not Role.query.filter_by(name=r).first():
             db.session.add(Role(name=r))
     db.session.commit()
 
-    # Admin user
     admin_role = Role.query.filter_by(name='super_admin').first()
     if not User.query.filter_by(email='admin@embucollege.ac.ke').first():
         admin = User(
