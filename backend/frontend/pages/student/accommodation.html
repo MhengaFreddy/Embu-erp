@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Accommodation</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Accommodation</h2>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="font-bold text-lg mb-4">Hostel Booking</h3>
+                <p class="text-gray-600 mb-4">Book a hostel room for the semester.</p>
+                <button onclick="bookHostel()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Book Now</button>
+                <div id="bookingStatus" class="mt-4"></div>
+            </div>
+        </main>
+    </div>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    <script>
+        async function bookHostel() {
+            try {
+                const res = await fetchWithAuth('/api/hostel/allocations', { method: 'POST', body: JSON.stringify({}) });
+                document.getElementById('bookingStatus').innerHTML = '<p class="text-green-600">Booking request submitted!</p>';
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+    </script>
+</body>
+</html>

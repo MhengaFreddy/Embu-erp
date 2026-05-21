@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results Entry</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Results Entry</h2>
+            <div class="bg-white p-4 rounded-lg shadow mb-6">
+                <label class="block text-sm font-medium mb-2">Select Unit</label>
+                <select id="unitSelect" class="w-full border rounded p-2 mb-4">
+                    <option value="">-- Choose unit --</option>
+                </select>
+                <label class="block text-sm font-medium mb-2">Exam</label>
+                <select id="examSelect" class="w-full border rounded p-2 mb-4">
+                    <option value="">-- Choose exam --</option>
+                </select>
+                <button onclick="loadStudents()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Load Students</button>
+            </div>
+            <div id="studentsTable" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    <script>
+        async function populateUnits() {
+            const units = await fetchWithAuth('/api/lecturer/my-units');
+            const select = document.getElementById('unitSelect');
+            units.forEach(u => {
+                select.innerHTML += `<option value="${u.unit_id}">${u.unit_code} - ${u.unit_name}</option>`;
+            });
+            // Populate exams (simplified: assume all exams for selected unit)
+        }
+
+        async function loadStudents() {
+            const unitId = document.getElementById('unitSelect').value;
+            if (!unitId) return alert('Select a unit');
+            const students = await fetchWithAuth(`/api/lecturer/units/${unitId}/students`);
+            const examId = document.getElementById('examSelect').value || 1; // placeholder
+            let html = '<table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Adm No</th><th>Name</th><th>Marks</th><th>Action</th></tr></thead><tbody>';
+            students.forEach(s => {
+                html += `<tr class="border-b">
+                    <td>${s.admission_number}</td>
+                    <td>${s.name}</td>
+                    <td><input type="number" id="marks_${s.student_id}" class="w-20 border rounded p-1"></td>
+                    <td><button onclick="saveResult(${s.student_id}, ${examId})" class="bg-blue-500 text-white px-2 py-1 rounded">Save</button></td>
+                </tr>`;
+            });
+            html += '</tbody></table>';
+            document.getElementById('studentsTable').innerHTML = html;
+        }
+
+        async function saveResult(studentId, examId) {
+            const marks = document.getElementById(`marks_${studentId}`).value;
+            try {
+                await fetchWithAuth('/api/lecturer/results', {
+                    method: 'POST',
+                    body: JSON.stringify({ exam_id: examId, student_id: studentId, marks: parseFloat(marks) })
+                });
+                alert('Result saved');
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        window.addEventListener('DOMContentLoaded', populateUnits);
+    </script>
+</body>
+</html>

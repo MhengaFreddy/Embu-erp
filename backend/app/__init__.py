@@ -41,16 +41,22 @@ def create_app(config_class=Config):
     app.register_blueprint(lecturer_bp, url_prefix='/api/lecturer')
     app.register_blueprint(users_bp, url_prefix='/api/users')
 
-    # ---------- Static file serving (only for non-API paths) ----------
+    # ---------- Static file serving (works locally AND on Railway) ----------
     current_dir = os.path.dirname(os.path.abspath(__file__))  # backend/app
-    backend_dir = os.path.dirname(current_dir)
-    project_dir = os.path.dirname(backend_dir)
-    frontend_path = os.path.join(project_dir, 'frontend')
-
-    if not os.path.isdir(frontend_path):
-        print(f"WARNING: frontend folder not found at {frontend_path}")
-        frontend_path = os.path.join(os.getcwd(), '..', 'frontend')
-        print(f"Fallback frontend path: {frontend_path}")
+    backend_dir = os.path.dirname(current_dir)                 # backend
+    
+    # Local: frontend is at ../frontend (relative to backend folder)
+    local_frontend = os.path.join(backend_dir, '..', 'frontend')
+    # Railway: frontend is copied inside backend/
+    railway_frontend = os.path.join(backend_dir, 'frontend')
+    
+    if os.path.isdir(local_frontend):
+        frontend_path = os.path.realpath(local_frontend)
+    elif os.path.isdir(railway_frontend):
+        frontend_path = railway_frontend
+    else:
+        frontend_path = railway_frontend  # fallback, may be missing
+        print(f"WARNING: frontend folder not found at {local_frontend} or {railway_frontend}")
 
     @app.route('/assets/<path:filename>')
     def serve_assets(filename):
@@ -64,7 +70,7 @@ def create_app(config_class=Config):
     @app.route('/<path:page>')
     def serve_page(page):
         if page.startswith('api/'):
-            abort(404)   # just in case, but blueprints already handle these
+            abort(404)
         return send_from_directory(frontend_path, page)
 
     # ---------- JWT user loader ----------

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academic Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="../dashboard.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Dashboard</a>
+                <a href="students.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Students</a>
+                <a href="academic.html" class="block py-2 px-3 rounded bg-emerald-900">Academic</a>
+                <a href="finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
+                <a href="hr.html" class="block py-2 px-3 rounded hover:bg-emerald-700">HR</a>
+                <a href="library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
+                <a href="hostel.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Hostel</a>
+                <a href="inventory.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Inventory</a>
+                <a href="communication.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Communication</a>
+            </nav>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
+            </div>
+        </aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Academic Management</h2>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="showTab('departments')" class="bg-emerald-600 text-white px-4 py-2 rounded">Departments</button>
+                <button onclick="showTab('courses')" class="bg-emerald-600 text-white px-4 py-2 rounded">Courses</button>
+                <button onclick="showTab('units')" class="bg-emerald-600 text-white px-4 py-2 rounded">Units</button>
+                <button onclick="showTab('timetable')" class="bg-emerald-600 text-white px-4 py-2 rounded">Timetable</button>
+                <button onclick="showTab('exams')" class="bg-emerald-600 text-white px-4 py-2 rounded">Exams</button>
+                <button onclick="showTab('results')" class="bg-emerald-600 text-white px-4 py-2 rounded">Results</button>
+            </div>
+            <div id="contentArea" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+        async function showTab(tab) {
+            const area = document.getElementById('contentArea');
+            area.innerHTML = '<p class="text-gray-500">Loading...</p>';
+            try {
+                let data; let html = '';
+                switch(tab) {
+                    case 'departments': data = await fetchWithAuth('/api/academic/departments'); html = buildTable(data, ['id', 'name', 'code']); break;
+                    case 'courses': data = await fetchWithAuth('/api/academic/courses'); html = buildTable(data, ['id', 'name', 'code', 'department_id']); break;
+                    case 'units': data = await fetchWithAuth('/api/academic/units'); html = buildTable(data, ['id', 'name', 'code', 'course_id', 'semester_id', 'credit_hours']); break;
+                    case 'timetable': data = await fetchWithAuth('/api/academic/timetable'); html = buildTable(data, ['id', 'unit_id', 'lecturer_id', 'day_of_week', 'start_time', 'end_time', 'room']); break;
+                    case 'exams': data = await fetchWithAuth('/api/academic/exams'); html = buildTable(data, ['id', 'unit_id', 'exam_date', 'exam_type', 'max_marks']); break;
+                    case 'results': data = await fetchWithAuth('/api/academic/results'); html = buildTable(data, ['id', 'student_id', 'exam_id', 'marks', 'grade', 'gpa_points']); break;
+                }
+                area.innerHTML = html || '<p>No data found.</p>';
+            } catch (err) { area.innerHTML = '<p class="text-red-600">Error: ' + err.message + '</p>'; }
+        }
+
+        function buildTable(data, columns) {
+            if (!data.length) return '<p>No records.</p>';
+            let html = '<table class="w-full table-auto"><thead><tr class="bg-gray-100">';
+            columns.forEach(col => html += '<th class="p-2 text-left">' + col.replace('_', ' ') + '</th>');
+            html += '</tr></thead><tbody>';
+            data.forEach(item => {
+                html += '<tr class="border-b">';
+                columns.forEach(col => html += '<td class="p-2">' + (item[col] !== undefined ? item[col] : '') + '</td>');
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            return html;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => showTab('departments'));
+    </script>
+</body>
+</html>

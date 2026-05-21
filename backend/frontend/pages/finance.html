@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="../dashboard.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Dashboard</a>
+                <a href="students.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Students</a>
+                <a href="academic.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Academic</a>
+                <a href="finance.html" class="block py-2 px-3 rounded bg-emerald-900">Finance</a>
+                <a href="hr.html" class="block py-2 px-3 rounded hover:bg-emerald-700">HR</a>
+                <a href="library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
+                <a href="hostel.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Hostel</a>
+                <a href="inventory.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Inventory</a>
+                <a href="communication.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Communication</a>
+            </nav>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
+            </div>
+        </aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Finance Management</h2>
+            <div class="flex space-x-4 mb-6">
+                <button onclick="showInvoices()" class="bg-emerald-600 text-white px-4 py-2 rounded">Invoices</button>
+                <button onclick="showPayments()" class="bg-blue-600 text-white px-4 py-2 rounded">Payments</button>
+                <button onclick="showExpenses()" class="bg-purple-600 text-white px-4 py-2 rounded">Expenses</button>
+            </div>
+            <div id="contentArea" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+
+    <script>
+        function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+        async function fetchWithAuth(url, options) {
+            options = options || {};
+            var token = localStorage.getItem('access_token');
+            if (!token) { window.location.href = '../index.html'; return; }
+            var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+            if (options.headers) {
+                for (var key in options.headers) { headers[key] = options.headers[key]; }
+            }
+            var response = await fetch(url, { method: options.method || 'GET', headers: headers, body: options.body });
+            if (response.status === 401) {
+                var refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    var res = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Authorization': 'Bearer ' + refreshToken } });
+                    if (res.ok) {
+                        var data = await res.json();
+                        localStorage.setItem('access_token', data.access_token);
+                        return fetchWithAuth(url, options);
+                    }
+                }
+                window.location.href = '../index.html';
+            }
+            return response.json();
+        }
+
+        async function showInvoices() {
+            try {
+                var invoices = await fetchWithAuth('/api/finance/invoices');
+                var html = '<h3 class="font-bold text-lg mb-2">All Invoices</h3><table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Student ID</th><th>Amount</th><th>Status</th></tr></thead><tbody>';
+                invoices.forEach(function(inv) {
+                    html += '<tr><td>' + inv.student_id + '</td><td>KES ' + inv.amount + '</td><td>' + inv.status + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function showPayments() {
+            try {
+                var payments = await fetchWithAuth('/api/finance/payments');
+                var html = '<h3 class="font-bold text-lg mb-2">All Payments</h3><table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Invoice ID</th><th>Amount</th><th>Method</th><th>Date</th></tr></thead><tbody>';
+                payments.forEach(function(p) {
+                    html += '<tr><td>' + p.invoice_id + '</td><td>KES ' + p.amount + '</td><td>' + p.method + '</td><td>' + new Date(p.payment_date).toLocaleDateString() + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function showExpenses() {
+            try {
+                var expenses = await fetchWithAuth('/api/finance/expenses');
+                var html = '<h3 class="font-bold text-lg mb-2">Expenses</h3><table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Description</th><th>Amount</th><th>Category</th><th>Date</th></tr></thead><tbody>';
+                expenses.forEach(function(exp) {
+                    html += '<tr><td>' + exp.description + '</td><td>KES ' + exp.amount + '</td><td>' + exp.category + '</td><td>' + exp.date + '</td></tr>';
+                });
+                html += '</tbody></table>';
+                document.getElementById('contentArea').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        window.addEventListener('DOMContentLoaded', showInvoices);
+    </script>
+</body>
+</html>

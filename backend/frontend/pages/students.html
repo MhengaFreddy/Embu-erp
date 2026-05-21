@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="../dashboard.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Dashboard</a>
+                <a href="students.html" class="block py-2 px-3 rounded bg-emerald-900">Students</a>
+                <a href="academic.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Academic</a>
+                <a href="finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
+                <a href="hr.html" class="block py-2 px-3 rounded hover:bg-emerald-700">HR</a>
+                <a href="library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
+                <a href="hostel.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Hostel</a>
+                <a href="inventory.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Inventory</a>
+                <a href="communication.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Communication</a>
+            </nav>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
+            </div>
+        </aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Student Management</h2>
+            <button onclick="openAddModal()" class="mb-4 bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">+ Add Student</button>
+            <div id="studentTable" class="overflow-x-auto bg-white rounded-lg shadow"></div>
+        </main>
+    </div>
+
+    <div id="studentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4" id="modalTitle">Add Student</h3>
+            <form id="studentForm">
+                <input type="hidden" id="studentId">
+                <input type="text" id="admission_number" placeholder="Admission No" required class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="first_name" placeholder="First Name" required class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="last_name" placeholder="Last Name" required class="w-full mb-2 p-2 border rounded">
+                <input type="date" id="date_of_birth" class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="phone" placeholder="Phone" class="w-full mb-2 p-2 border rounded">
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function logout() {
+            localStorage.clear();
+            window.location.href = '../index.html';
+        }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '../index.html';
+                return;
+            }
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                ...options.headers
+            };
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    const res = await fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + refreshToken }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        localStorage.setItem('access_token', data.access_token);
+                        return fetchWithAuth(url, options);
+                    }
+                }
+                window.location.href = '../index.html';
+            }
+            return response.json();
+        }
+
+        async function loadStudents() {
+            try {
+                const students = await fetchWithAuth('/api/students/');
+                let html = "<table class=\"w-full table-auto\"><thead><tr class=\"bg-gray-100\"><th>Adm No</th><th>Name</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+                students.forEach(s => {
+                    html += "<tr class=\"border-b\"><td>" + s.admission_number + "</td><td>" + s.first_name + " " + s.last_name + "</td><td>" + s.enrollment_status + "</td><td><button onclick=\"editStudent(" + s.id + ")\" class=\"text-blue-600 mr-2\">Edit</button><button onclick=\"deleteStudent(" + s.id + ")\" class=\"text-red-600\">Delete</button></td></tr>";
+                });
+                html += "</tbody></table>";
+                document.getElementById('studentTable').innerHTML = html;
+            } catch (err) {
+                alert('Error loading students: ' + err.message);
+            }
+        }
+
+        function openAddModal() {
+            document.getElementById('studentForm').reset();
+            document.getElementById('studentId').value = '';
+            document.getElementById('modalTitle').textContent = 'Add Student';
+            document.getElementById('studentModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('studentModal').classList.add('hidden');
+        }
+
+        async function editStudent(id) {
+            try {
+                const student = await fetchWithAuth('/api/students/' + id);
+                document.getElementById('studentId').value = student.id;
+                document.getElementById('admission_number').value = student.admission_number;
+                document.getElementById('first_name').value = student.first_name;
+                document.getElementById('last_name').value = student.last_name;
+                document.getElementById('date_of_birth').value = student.date_of_birth;
+                document.getElementById('phone').value = student.phone;
+                document.getElementById('modalTitle').textContent = 'Edit Student';
+                document.getElementById('studentModal').classList.remove('hidden');
+            } catch (err) {
+                alert('Error fetching student: ' + err.message);
+            }
+        }
+
+        async function deleteStudent(id) {
+            if (!confirm('Are you sure?')) return;
+            try {
+                await fetchWithAuth('/api/students/' + id, { method: 'DELETE' });
+                loadStudents();
+            } catch (err) {
+                alert('Delete failed: ' + err.message);
+            }
+        }
+
+        document.getElementById('studentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('studentId').value;
+            const data = {
+                admission_number: document.getElementById('admission_number').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                date_of_birth: document.getElementById('date_of_birth').value,
+                phone: document.getElementById('phone').value
+            };
+
+            try {
+                if (id) {
+                    await fetchWithAuth('/api/students/' + id, { method: 'PUT', body: JSON.stringify(data) });
+                } else {
+                    await fetchWithAuth('/api/students/', { method: 'POST', body: JSON.stringify(data) });
+                }
+                closeModal();
+                loadStudents();
+            } catch (err) {
+                alert('Save failed: ' + err.message);
+            }
+        });
+
+        window.addEventListener('DOMContentLoaded', loadStudents);
+    </script>
+</body>
+</html>
