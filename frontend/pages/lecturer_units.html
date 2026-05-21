@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Units</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">My Units</h2>
+            <div id="unitsTable" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    <script>
+        async function loadUnits() {
+            try {
+                const units = await fetchWithAuth('/api/lecturer/my-units');
+                let html = '';
+                if (units.length === 0) {
+                    html = '<p>No units assigned yet.</p>';
+                } else {
+                    html = '<table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Code</th><th>Unit Name</th><th>Schedule</th></tr></thead><tbody>';
+                    units.forEach(u => {
+                        const schedule = u.schedule.map(s => `Day ${s.day} ${s.start}-${s.end} (${s.room})`).join('<br>');
+                        html += `<tr class="border-b"><td>${u.unit_code}</td><td>${u.unit_name}</td><td>${schedule}</td></tr>`;
+                    });
+                    html += '</tbody></table>';
+                }
+                document.getElementById('unitsTable').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+        window.addEventListener('DOMContentLoaded', loadUnits);
+    </script>
+</body>
+</html>

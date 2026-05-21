@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embu College ERP - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar will be inserted by JavaScript -->
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <!-- Main Content -->
+        <main class="flex-1 p-6 overflow-y-auto" id="mainContent">
+            <div id="dashboardContent">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm">Total Students</h3>
+                        <p id="totalStudents" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm">Fee Collection</h3>
+                        <p id="totalFees" class="text-2xl font-bold">KES 0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm">Staff Members</h3>
+                        <p id="totalStaff" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <h3 class="text-gray-500 text-sm">Books in Library</h3>
+                        <p id="totalBooks" class="text-2xl font-bold">0</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <canvas id="enrollmentChart"></canvas>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="assets/js/api.js"></script>
+    <script>
+        // ========== Dynamic Sidebar ==========
+        const roleMenus = {
+            super_admin: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Users', href: '/pages/users.html' },
+                { text: 'Students', href: '/pages/students.html' },
+                { text: 'Academic', href: '/pages/academic.html' },
+                { text: 'Finance', href: '/pages/finance.html' },
+                { text: 'HR', href: '/pages/hr.html' },
+                { text: 'Library', href: '/pages/library.html' },
+                { text: 'Hostel', href: '/pages/hostel.html' },
+                { text: 'Inventory', href: '/pages/inventory.html' },
+                { text: 'Communication', href: '/pages/communication.html' }
+            ],
+            principal: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Users', href: '/pages/users.html' },
+                { text: 'Students', href: '/pages/students.html' },
+                { text: 'Academic', href: '/pages/academic.html' },
+                { text: 'Finance', href: '/pages/finance.html' },
+                { text: 'HR', href: '/pages/hr.html' },
+                { text: 'Library', href: '/pages/library.html' }
+            ],
+            registrar: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Students', href: '/pages/students.html' },
+                { text: 'Academic', href: '/pages/academic.html' },
+                { text: 'Timetable', href: '/pages/timetable.html' }
+            ],
+            finance_officer: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Finance', href: '/pages/finance.html' },
+                { text: 'Fee Structures', href: '/pages/fee_structures.html' },
+                { text: 'Reports', href: '/pages/finance_reports.html' }
+            ],
+            hr_manager: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'HR', href: '/pages/hr.html' },
+                { text: 'Staff', href: '/pages/hr_staff.html' },
+                { text: 'Payroll', href: '/pages/hr_payroll.html' }
+            ],
+            lecturer: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'My Units', href: '/pages/lecturer_units.html' },
+                { text: 'Results Entry', href: '/pages/lecturer_results.html' }
+            ],
+            librarian: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Library', href: '/pages/library.html' },
+                { text: 'Books', href: '/pages/library_books.html' },
+                { text: 'Loans', href: '/pages/library_loans.html' }
+            ],
+            hostel_manager: [
+                { text: 'Dashboard', href: '/dashboard.html' },
+                { text: 'Hostel', href: '/pages/hostel.html' },
+                { text: 'Rooms', href: '/pages/hostel_rooms.html' },
+                { text: 'Allocations', href: '/pages/hostel_allocations.html' }
+            ],
+            student: [
+                { text: 'Dashboard', href: '/student_portal.html' },
+                { text: 'Finance', href: '/pages/student/finance.html' },
+                { text: 'Academics', href: '/pages/student/academics.html' },
+                { text: 'Accommodation', href: '/pages/student/accommodation.html' },
+                { text: 'Student Requests', href: '/pages/student/requests.html' },
+                { text: 'Library', href: '/pages/student/library.html' }
+            ]
+        };
+
+        function buildSidebar(role) {
+            const menus = roleMenus[role] || roleMenus.super_admin;
+            let html = '<h1 class="text-xl font-bold mb-8">Embu College</h1><nav class="space-y-2">';
+            menus.forEach(item => {
+                html += `<a href="${item.href}" class="block py-2 px-3 rounded hover:bg-emerald-700">${item.text}</a>`;
+            });
+            html += '</nav><div class="mt-auto pt-8"><button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button></div>';
+            document.getElementById('sidebarContainer').innerHTML = html;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+
+        // ========== Auth fetch (from shared api.js) ==========
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            if (!token) { window.location.href = '/index.html'; return; }
+            const headers = { 'Authorization': 'Bearer ' + token, ...options.headers };
+            if (options.body) { headers['Content-Type'] = 'application/json'; }
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    const res = await fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + refreshToken }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        localStorage.setItem('access_token', data.access_token);
+                        return fetchWithAuth(url, options);
+                    }
+                }
+                window.location.href = '/index.html';
+            }
+            return response.json();
+        }
+
+        // ========== Dashboard stats (only if role allows) ==========
+        async function loadDashboardStats() {
+            try {
+                const stats = await fetchWithAuth('/api/dashboard/stats');
+                document.getElementById('totalStudents').textContent = stats.total_students || 0;
+                document.getElementById('totalFees').textContent = 'KES ' + (stats.fee_collected || 0).toLocaleString();
+                document.getElementById('totalStaff').textContent = stats.total_staff || 0;
+                document.getElementById('totalBooks').textContent = stats.total_books || 0;
+
+                new Chart(document.getElementById('enrollmentChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: stats.enrollment_labels || [],
+                        datasets: [{ label: 'Enrollments', data: stats.enrollment_data || [], backgroundColor: '#059669' }]
+                    }
+                });
+                new Chart(document.getElementById('revenueChart'), {
+                    type: 'line',
+                    data: {
+                        labels: stats.revenue_labels || [],
+                        datasets: [{ label: 'Revenue (KES)', data: stats.revenue_data || [], borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)' }]
+                    }
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        // ========== Initialise ==========
+        window.addEventListener('DOMContentLoaded', () => {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) { window.location.href = '/index.html'; return; }
+            buildSidebar(user.role);
+            // Only load dashboard stats if NOT a student (students go to portal)
+            if (user.role !== 'student') {
+                loadDashboardStats();
+            } else {
+                window.location.href = '/student_portal.html'; // redirect students to portal
+            }
+        });
+    </script>
+</body>
+</html>

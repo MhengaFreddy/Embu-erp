@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Staff Management</h2>
+            <button onclick="openAddModal()" class="mb-4 bg-emerald-600 text-white px-4 py-2 rounded">+ Add Staff</button>
+            <div id="staffTable" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="staffModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg w-full max-w-md">
+            <h3 class="text-xl font-bold mb-4" id="modalTitle">Add Staff</h3>
+            <form id="staffForm">
+                <input type="hidden" id="staffId">
+                <input type="text" id="employee_number" placeholder="Employee No" required class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="first_name" placeholder="First Name" required class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="last_name" placeholder="Last Name" required class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="designation" placeholder="Designation" class="w-full mb-2 p-2 border rounded">
+                <input type="text" id="phone" placeholder="Phone" class="w-full mb-2 p-2 border rounded">
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    <script>
+        function logout() { localStorage.clear(); window.location.href = '/index.html'; }
+
+        // ---------- Load staff list ----------
+        async function loadStaff() {
+            try {
+                const staff = await fetchWithAuth('/api/hr/staff');
+                let html = '<table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Employee No</th><th>Name</th><th>Designation</th><th>Phone</th><th>Actions</th></tr></thead><tbody>';
+                staff.forEach(s => {
+                    html += '<tr class="border-b">' +
+                        '<td>' + s.employee_number + '</td>' +
+                        '<td>' + s.first_name + ' ' + s.last_name + '</td>' +
+                        '<td>' + (s.designation || '') + '</td>' +
+                        '<td>' + (s.phone || '') + '</td>' +
+                        '<td><button onclick="editStaff(' + s.id + ')" class="text-blue-600 mr-2">Edit</button><button onclick="deleteStaff(' + s.id + ')" class="text-red-600">Delete</button></td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+                document.getElementById('staffTable').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        // ---------- Modal helpers ----------
+        function openAddModal() {
+            document.getElementById('staffForm').reset();
+            document.getElementById('staffId').value = '';
+            document.getElementById('modalTitle').textContent = 'Add Staff';
+            document.getElementById('staffModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('staffModal').classList.add('hidden');
+        }
+
+        // ---------- Edit staff (populate form) ----------
+        async function editStaff(id) {
+            try {
+                const staff = await fetchWithAuth('/api/hr/staff/' + id);
+                document.getElementById('staffId').value = staff.id;
+                document.getElementById('employee_number').value = staff.employee_number;
+                document.getElementById('first_name').value = staff.first_name;
+                document.getElementById('last_name').value = staff.last_name;
+                document.getElementById('designation').value = staff.designation || '';
+                document.getElementById('phone').value = staff.phone || '';
+                document.getElementById('modalTitle').textContent = 'Edit Staff';
+                document.getElementById('staffModal').classList.remove('hidden');
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        // ---------- Delete staff ----------
+        async function deleteStaff(id) {
+            if (!confirm('Are you sure?')) return;
+            try {
+                await fetchWithAuth('/api/hr/staff/' + id, { method: 'DELETE' });
+                loadStaff();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        // ---------- Save (add or update) ----------
+        document.getElementById('staffForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('staffId').value;
+            const data = {
+                employee_number: document.getElementById('employee_number').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                designation: document.getElementById('designation').value,
+                phone: document.getElementById('phone').value
+            };
+
+            try {
+                if (id) {
+                    await fetchWithAuth('/api/hr/staff/' + id, { method: 'PUT', body: JSON.stringify(data) });
+                } else {
+                    await fetchWithAuth('/api/hr/staff', { method: 'POST', body: JSON.stringify(data) });
+                }
+                closeModal();
+                loadStaff();
+            } catch (err) { alert('Error: ' + err.message); }
+        });
+
+        // ---------- Initial load ----------
+        window.addEventListener('DOMContentLoaded', loadStaff);
+    </script>
+</body>
+</html>

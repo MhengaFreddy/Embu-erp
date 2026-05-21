@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - Embu College</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="/student_portal.html" class="block py-2 px-3 rounded bg-emerald-900">Dashboard</a>
+                <a href="/pages/student/finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
+                <a href="/pages/student/academics.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Academics</a>
+                <a href="/pages/student/accommodation.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Accommodation</a>
+                <a href="/pages/student/requests.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Student Requests</a>
+                <a href="/pages/student/library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
+            </nav>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 overflow-y-auto">
+            <!-- Student Profile Card -->
+            <div class="bg-white p-6 rounded-lg shadow mb-6" id="profileCard">
+                <h2 class="text-xl font-bold mb-2">Welcome, <span id="studentName">Student</span></h2>
+                <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                    <div><strong>Admission No:</strong> <span id="admissionNo">---</span></div>
+                    <div><strong>Status:</strong> <span id="enrollStatus">---</span></div>
+                    <div><strong>Phone:</strong> <span id="phone">---</span></div>
+                    <div><strong>Email:</strong> <span id="email">---</span></div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <a href="/pages/student/finance.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-emerald-700">💰 Finance</h3>
+                    <p class="text-gray-600 text-sm mt-2">Fee payment, invoices, statements, receipts</p>
+                </a>
+                <a href="/pages/student/academics.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-blue-700">📚 Academics</h3>
+                    <p class="text-gray-600 text-sm mt-2">Registration, units, results, exam card</p>
+                </a>
+                <a href="/pages/student/accommodation.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-purple-700">🏠 Accommodation</h3>
+                    <p class="text-gray-600 text-sm mt-2">Hostel booking and management</p>
+                </a>
+                <a href="/pages/student/requests.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-orange-700">📝 Student Requests</h3>
+                    <p class="text-gray-600 text-sm mt-2">Call off, transfer, defer, resumption</p>
+                </a>
+                <a href="/pages/student/library.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-teal-700">📖 Library</h3>
+                    <p class="text-gray-600 text-sm mt-2">Room booking, book acquisition</p>
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function logout() { localStorage.clear(); window.location.href = '/index.html'; }
+
+        async function fetchWithAuth(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            if (!token) { window.location.href = '/index.html'; return; }
+            const headers = { 'Authorization': 'Bearer ' + token };
+            if (options.body) { headers['Content-Type'] = 'application/json'; }
+            const response = await fetch(url, { ...options, headers });
+            if (response.status === 401) {
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    const res = await fetch('/api/auth/refresh', { method: 'POST', headers: { 'Authorization': 'Bearer ' + refreshToken } });
+                    if (res.ok) {
+                        const data = await res.json();
+                        localStorage.setItem('access_token', data.access_token);
+                        return fetchWithAuth(url, options);
+                    }
+                }
+                window.location.href = '/index.html';
+            }
+            return response.json();
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const profile = await fetchWithAuth('/api/students/profile');
+                document.getElementById('studentName').textContent = profile.first_name + ' ' + profile.last_name;
+                document.getElementById('admissionNo').textContent = profile.admission_number;
+                document.getElementById('enrollStatus').textContent = profile.enrollment_status;
+                document.getElementById('phone').textContent = profile.phone || '---';
+                document.getElementById('email').textContent = profile.admission_number + '@embucollege.ac.ke';
+            } catch (err) {
+                console.error('Failed to load profile:', err);
+                // Still show the page, just without profile details
+            }
+        });
+    </script>
+</body>
+</html>

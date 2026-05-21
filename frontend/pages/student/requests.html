@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Student Requests</title><script src="https://cdn.tailwindcss.com"></script></head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Student Requests</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <a href="request_form.html?type=call_off" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Call Off</h3><p class="text-gray-600">Request to call off studies</p></a>
+                <a href="request_form.html?type=interschool_transfer" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Inter-school Transfer</h3><p class="text-gray-600">Transfer to another school</p></a>
+                <a href="request_form.html?type=defer" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Defer</h3><p class="text-gray-600">Defer admission</p></a>
+                <a href="request_form.html?type=resumption" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Resumption of Studies</h3><p class="text-gray-600">Request to resume</p></a>
+                <a href="request_form.html?type=withdrawal" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Withdrawal from College</h3><p class="text-gray-600">Withdraw from college</p></a>
+                <a href="request_form.html?type=supp_exam" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition"><h3 class="font-bold text-lg mb-2">Supp/Retake/Special Exam</h3><p class="text-gray-600">Request exam retake</p></a>
+            </div>
+        </main>
+    </div>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Communication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="../dashboard.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Dashboard</a>
+                <a href="students.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Students</a>
+                <a href="academic.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Academic</a>
+                <a href="finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
+                <a href="hr.html" class="block py-2 px-3 rounded hover:bg-emerald-700">HR</a>
+                <a href="library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
+                <a href="hostel.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Hostel</a>
+                <a href="inventory.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Inventory</a>
+                <a href="communication.html" class="block py-2 px-3 rounded bg-emerald-900">Communication</a>
+            </nav>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
+            </div>
+        </aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">Communication Center</h2>
+            <div class="flex flex-wrap gap-2 mb-6">
+                <button onclick="showTab('send')" class="bg-emerald-600 text-white px-4 py-2 rounded">Send Message</button>
+                <button onclick="showTab('history')" class="bg-emerald-600 text-white px-4 py-2 rounded">History</button>
+            </div>
+            <div id="contentArea" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+
+    <script src="../assets/js/api.js"></script>
+    <script>
+        function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+        function showTab(tab) {
+            const area = document.getElementById('contentArea');
+            if (tab === 'send') {
+                area.innerHTML = '<h3 class="font-bold text-lg mb-3">Compose Message</h3>' +
+                    '<div class="mb-4"><label class="block text-sm">Recipient (User ID or email)</label><input id="recipient" type="text" class="w-full border rounded p-2" placeholder="User ID or email"></div>' +
+                    '<div class="mb-4"><label class="block text-sm">Channel</label><select id="channel" class="w-full border rounded p-2"><option value="email">Email</option><option value="sms">SMS</option></select></div>' +
+                    '<div class="mb-4"><label class="block text-sm">Message</label><textarea id="messageText" class="w-full border rounded p-2" rows="4"></textarea></div>' +
+                    '<button onclick="sendMessage()" class="bg-emerald-600 text-white px-4 py-2 rounded hover:bg-emerald-700">Send</button>' +
+                    '<p id="sendStatus" class="mt-2 text-sm"></p>';
+            } else if (tab === 'history') {
+                showHistory();
+            }
+        }
+
+        async function showHistory() {
+            const area = document.getElementById('contentArea');
+            area.innerHTML = '<p class="text-gray-500">Loading...</p>';
+            try {
+                const data = await fetchWithAuth('/api/communication/notifications');
+                let html = '<h3 class="font-bold text-lg mb-3">Message History</h3>';
+                if (data.length) {
+                    html += '<table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>To</th><th>Channel</th><th>Message</th><th>Sent</th><th>Status</th></tr></thead><tbody>';
+                    data.forEach(n => {
+                        html += '<tr class="border-b"><td>' + n.user_id + '</td><td>' + n.channel + '</td><td>' + n.message + '</td><td>' + new Date(n.sent_at).toLocaleString() + '</td><td>' + n.status + '</td></tr>';
+                    });
+                    html += '</tbody></table>';
+                } else {
+                    html += '<p>No messages sent yet.</p>';
+                }
+                area.innerHTML = html;
+            } catch (err) { area.innerHTML = '<p class="text-red-600">Error: ' + err.message + '</p>'; }
+        }
+
+        async function sendMessage() {
+            const recipient = document.getElementById('recipient').value;
+            const channel = document.getElementById('channel').value;
+            const message = document.getElementById('messageText').value;
+            const statusEl = document.getElementById('sendStatus');
+            statusEl.textContent = 'Sending...';
+            try {
+                await fetchWithAuth('/api/communication/send', { method: 'POST', body: JSON.stringify({ recipient, channel, message }) });
+                statusEl.textContent = 'Message sent successfully!';
+                statusEl.className = 'text-green-600';
+            } catch (err) {
+                statusEl.textContent = 'Failed: ' + err.message;
+                statusEl.className = 'text-red-600';
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => showTab('send'));
+    </script>
+</body>
+</html>

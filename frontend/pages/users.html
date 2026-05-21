@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+        <main class="flex-1 p-6 overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-4">System Users</h2>
+            <div id="usersTable" class="bg-white p-4 rounded-lg shadow"></div>
+        </main>
+    </div>
+    <script src="/assets/js/api.js"></script>
+    <script src="/assets/js/sidebar.js"></script>
+    <script>
+        async function loadUsers() {
+            try {
+                const users = await fetchWithAuth('/api/users/');
+                let html = '<table class="w-full table-auto"><thead><tr class="bg-gray-100"><th>Email</th><th>Role</th><th>Active</th><th>Last Login</th></tr></thead><tbody>';
+                users.forEach(u => {
+                    html += '<tr class="border-b">' +
+                        '<td>' + u.email + '</td>' +
+                        '<td>' + u.role + '</td>' +
+                        '<td>' + (u.is_active ? 'Yes' : 'No') + '</td>' +
+                        '<td>' + (u.last_login || 'Never') + '</td>' +
+                        '</tr>';
+                });
+                html += '</tbody></table>';
+                document.getElementById('usersTable').innerHTML = html;
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+        window.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>
