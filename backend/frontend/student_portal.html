@@ -7,9 +7,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
-    <div class="flex h-screen">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Mobile overlay -->
+        <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onclick="toggleSidebar()"></div>
+
         <!-- Sidebar -->
-        <aside class="w-64 bg-emerald-800 text-white p-4 hidden md:block">
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 overflow-y-auto">
             <h1 class="text-xl font-bold mb-8">Embu College</h1>
             <nav class="space-y-2">
                 <a href="/student_portal.html" class="block py-2 px-3 rounded bg-emerald-900">Dashboard</a>
@@ -25,11 +28,14 @@
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-6 overflow-y-auto">
-            <!-- Student Profile Card -->
-            <div class="bg-white p-6 rounded-lg shadow mb-6" id="profileCard">
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+            <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded">
+                ☰ Menu
+            </button>
+
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow mb-6" id="profileCard">
                 <h2 class="text-xl font-bold mb-2">Welcome, <span id="studentName">Student</span></h2>
-                <div class="grid grid-cols-2 gap-4 mt-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-sm">
                     <div><strong>Admission No:</strong> <span id="admissionNo">---</span></div>
                     <div><strong>Status:</strong> <span id="enrollStatus">---</span></div>
                     <div><strong>Phone:</strong> <span id="phone">---</span></div>
@@ -37,33 +43,46 @@
                 </div>
             </div>
 
-            <!-- Quick Links -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 <a href="/pages/student/finance.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
                     <h3 class="font-bold text-lg text-emerald-700">💰 Finance</h3>
-                    <p class="text-gray-600 text-sm mt-2">Fee payment, invoices, statements, receipts</p>
+                    <p class="text-gray-600 text-sm mt-2">Fee payment, invoices, statements</p>
                 </a>
                 <a href="/pages/student/academics.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
                     <h3 class="font-bold text-lg text-blue-700">📚 Academics</h3>
-                    <p class="text-gray-600 text-sm mt-2">Registration, units, results, exam card</p>
+                    <p class="text-gray-600 text-sm mt-2">Registration, units, results</p>
                 </a>
                 <a href="/pages/student/accommodation.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
                     <h3 class="font-bold text-lg text-purple-700">🏠 Accommodation</h3>
-                    <p class="text-gray-600 text-sm mt-2">Hostel booking and management</p>
+                    <p class="text-gray-600 text-sm mt-2">Hostel booking</p>
                 </a>
                 <a href="/pages/student/requests.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
-                    <h3 class="font-bold text-lg text-orange-700">📝 Student Requests</h3>
-                    <p class="text-gray-600 text-sm mt-2">Call off, transfer, defer, resumption</p>
+                    <h3 class="font-bold text-lg text-orange-700">📝 Requests</h3>
+                    <p class="text-gray-600 text-sm mt-2">Call off, transfer, defer</p>
                 </a>
                 <a href="/pages/student/library.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
                     <h3 class="font-bold text-lg text-teal-700">📖 Library</h3>
-                    <p class="text-gray-600 text-sm mt-2">Room booking, book acquisition</p>
+                    <p class="text-gray-600 text-sm mt-2">Room booking, books</p>
                 </a>
             </div>
         </main>
     </div>
 
     <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarContainer');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        // Close sidebar when a link is clicked
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && document.getElementById('sidebarContainer').classList.contains('-translate-x-full') === false && window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        });
+
         function logout() { localStorage.clear(); window.location.href = '/index.html'; }
 
         async function fetchWithAuth(url, options = {}) {
@@ -95,10 +114,7 @@
                 document.getElementById('enrollStatus').textContent = profile.enrollment_status;
                 document.getElementById('phone').textContent = profile.phone || '---';
                 document.getElementById('email').textContent = profile.admission_number + '@embucollege.ac.ke';
-            } catch (err) {
-                console.error('Failed to load profile:', err);
-                // Still show the page, just without profile details
-            }
+            } catch (err) { console.error(err); }
         });
     </script>
 </body>
