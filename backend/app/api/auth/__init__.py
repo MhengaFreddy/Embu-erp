@@ -1,11 +1,15 @@
-from flask import request, jsonify
-from flask_restx import Namespace, Resource, fields
+from flask import Blueprint, request, jsonify
+from flask_restx import Api, Namespace, Resource, fields
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
-from ...models.users import User
+from ...models.users import User, Role
 from ...extensions import db
 
+auth_bp = Blueprint('auth', __name__)
+api = Api(auth_bp, doc='/docs')
+
 auth_ns = Namespace('auth', description='Authentication operations')
+api.add_namespace(auth_ns, path='/')
 
 login_model = auth_ns.model('Login', {
     'email': fields.String(required=True),
@@ -15,7 +19,7 @@ login_model = auth_ns.model('Login', {
 register_model = auth_ns.model('Register', {
     'email': fields.String(required=True),
     'password': fields.String(required=True),
-    'role': fields.String(required=True)  # role name
+    'role': fields.String(required=True)
 })
 
 @auth_ns.route('/login')
@@ -27,8 +31,8 @@ class Login(Resource):
         if not user or not check_password_hash(user.password_hash, data['password']):
             return {'message': 'Invalid credentials'}, 401
 
-        access_token = create_access_token(identity=user.id)
-        refresh_token = create_refresh_token(identity=user.id)
+        access_token = create_access_token(identity=str(user.id))
+        refresh_token = create_refresh_token(identity=str(user.id))
 
         return {
             'access_token': access_token,
