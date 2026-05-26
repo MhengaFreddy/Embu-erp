@@ -6,7 +6,7 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     message = db.Column(db.Text)
-    channel = db.Column(db.String(20))
+    channel = db.Column(db.String(20))  # email, sms
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='sent')
 

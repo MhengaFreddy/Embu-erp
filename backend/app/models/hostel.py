@@ -15,6 +15,7 @@ class Room(db.Model):
     capacity = db.Column(db.Integer)
     occupied_beds = db.Column(db.Integer, default=0)
     fee_per_semester = db.Column(db.Numeric(10,2))
+
     allocations = db.relationship('Allocation', backref='room', lazy=True)
 
 class Allocation(db.Model):

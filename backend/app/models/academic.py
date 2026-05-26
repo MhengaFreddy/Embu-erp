@@ -6,6 +6,7 @@ class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     code = db.Column(db.String(10), unique=True)
+
     courses = db.relationship('Course', backref='department', lazy=True)
     staff_members = db.relationship('Staff', backref='department', lazy=True)
 
@@ -15,6 +16,7 @@ class Course(db.Model):
     name = db.Column(db.String(100))
     code = db.Column(db.String(10), unique=True)
     department_id = db.Column(db.Integer, db.ForeignKey('departments.id'))
+
     units = db.relationship('Unit', backref='course', lazy=True)
     fee_structures = db.relationship('FeeStructure', backref='course', lazy=True)
 
@@ -25,6 +27,7 @@ class Semester(db.Model):
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
     academic_year = db.Column(db.String(9))
+
     units = db.relationship('Unit', backref='semester', lazy=True)
     enrollments = db.relationship('Enrollment', backref='semester', lazy=True)
 
@@ -36,6 +39,7 @@ class Unit(db.Model):
     course_id = db.Column(db.Integer, db.ForeignKey('courses.id'))
     semester_id = db.Column(db.Integer, db.ForeignKey('semesters.id'))
     credit_hours = db.Column(db.Integer)
+
     enrollments = db.relationship('Enrollment', backref='unit', lazy=True)
     exams = db.relationship('Exam', backref='unit', lazy=True)
     timetable_entries = db.relationship('Timetable', backref='unit', lazy=True)
@@ -53,7 +57,7 @@ class Timetable(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     unit_id = db.Column(db.Integer, db.ForeignKey('units.id'))
     lecturer_id = db.Column(db.Integer, db.ForeignKey('staff.id'))
-    day_of_week = db.Column(db.SmallInteger)
+    day_of_week = db.Column(db.SmallInteger)  # 0=Monday, 6=Sunday
     start_time = db.Column(db.Time)
     end_time = db.Column(db.Time)
     room = db.Column(db.String(20))
@@ -63,8 +67,9 @@ class Exam(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     unit_id = db.Column(db.Integer, db.ForeignKey('units.id'))
     exam_date = db.Column(db.Date)
-    exam_type = db.Column(db.String(20))
+    exam_type = db.Column(db.String(20))  # 'CAT1','CAT2','FINAL'
     max_marks = db.Column(db.Numeric(5,2))
+
     results = db.relationship('Result', backref='exam', lazy=True)
 
 class Result(db.Model):
@@ -73,5 +78,5 @@ class Result(db.Model):
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'))
     exam_id = db.Column(db.Integer, db.ForeignKey('exams.id'))
     marks = db.Column(db.Numeric(5,2))
-    grade = db.Column(db.String(2))
+    grade = db.Column(db.String(2))  # A,B,C,D,F
     gpa_points = db.Column(db.Numeric(3,2))

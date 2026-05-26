@@ -1,33 +1,34 @@
-from flask import Blueprint
-from flask_restx import Api, Namespace, Resource, fields
+from flask import request, jsonify
+from flask_restx import Namespace, Resource, fields
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from werkzeug.security import check_password_hash, generate_password_hash
-from ...models.users import User, Role
+from ...models.users import User
 from ...extensions import db
 
-auth_bp = Blueprint('auth', __name__)
-api = Api(auth_bp, doc='/docs')
-
 auth_ns = Namespace('auth', description='Authentication operations')
-api.add_namespace(auth_ns, path='/')
 
 login_model = auth_ns.model('Login', {
     'email': fields.String(required=True),
     'password': fields.String(required=True)
 })
 
+register_model = auth_ns.model('Register', {
+    'email': fields.String(required=True),
+    'password': fields.String(required=True),
+    'role': fields.String(required=True)  # role name
+})
+
 @auth_ns.route('/login')
 class Login(Resource):
     @auth_ns.expect(login_model)
     def post(self):
-        data = api.payload
+        data = request.json
         user = User.query.filter_by(email=data['email']).first()
         if not user or not check_password_hash(user.password_hash, data['password']):
             return {'message': 'Invalid credentials'}, 401
 
-        # Convert user.id to string to satisfy JWT 'sub' requirement
-        access_token = create_access_token(identity=str(user.id))
-        refresh_token = create_refresh_token(identity=str(user.id))
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
 
         return {
             'access_token': access_token,
@@ -37,13 +38,9 @@ class Login(Resource):
 
 @auth_ns.route('/register')
 class Register(Resource):
-    @auth_ns.expect(auth_ns.model('Register', {
-        'email': fields.String(required=True),
-        'password': fields.String(required=True),
-        'role': fields.String(required=True)
-    }))
+    @auth_ns.expect(register_model)
     def post(self):
-        data = api.payload
+        data = request.json
         if User.query.filter_by(email=data['email']).first():
             return {'message': 'Email already registered'}, 400
 
@@ -62,6 +59,6 @@ class Register(Resource):
 class RefreshToken(Resource):
     @jwt_required(refresh=True)
     def post(self):
-        current_user_id = get_jwt_identity()  # already a string
+        current_user_id = get_jwt_identity()
         new_access_token = create_access_token(identity=current_user_id)
         return {'access_token': new_access_token}, 200

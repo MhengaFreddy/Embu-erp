@@ -5,229 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal - Embu College</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        * { transition: all 0.2s ease; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #059669; border-radius: 3px; }
-        .quick-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
-        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
-        .accordion-item.active .accordion-content { max-height: 500px; }  /* enough for sub-links */
-        .accordion-arrow { transition: transform 0.3s; }
-        .accordion-item.active .accordion-arrow { transform: rotate(90deg); }
-    </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gray-50">
     <div class="flex h-screen overflow-hidden">
         <!-- Mobile overlay -->
-        <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden" onclick="toggleSidebar()"></div>
+        <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onclick="toggleSidebar()"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebarContainer" class="w-64 bg-gradient-to-b from-emerald-800 to-emerald-900 text-white flex flex-col fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-2xl overflow-y-auto">
-            <!-- Logo area -->
-            <div class="px-5 py-6 border-b border-emerald-700/40">
-                <div class="flex items-center space-x-3">
-                    <img src="/assets/logo.png" alt="Logo" class="h-10 w-10 rounded-full object-cover bg-white p-1">
-                    <div>
-                        <h1 class="text-base font-bold leading-tight">Embu College</h1>
-                        <p class="text-xs text-emerald-200">Student Portal</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Accordion Navigation -->
-            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto" id="accordionNav">
-                <!-- Dashboard (standalone) -->
-                <a href="/student_portal.html" class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10">
-                    <span>🏠</span><span>Dashboard</span>
-                </a>
-
-                <!-- Finance -->
-                <div class="accordion-item">
-                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
-                        <span class="flex items-center space-x-3">
-                            <span>💰</span><span>Finance</span>
-                        </span>
-                        <svg class="accordion-arrow w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <div class="accordion-content pl-9 space-y-1 mt-1">
-                        <a href="/pages/student/finance/fee_payment.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Payment</a>
-                        <a href="/pages/student/finance/proforma_invoice.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Proforma Invoice</a>
-                        <a href="/pages/student/finance/fee_statement.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Statement</a>
-                        <a href="/pages/student/finance/payment_receipt.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Payment Receipt</a>
-                        <a href="/pages/student/finance/fee_structure.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Structure</a>
-                    </div>
-                </div>
-
-                <!-- Academics -->
-                <div class="accordion-item">
-                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
-                        <span class="flex items-center space-x-3">
-                            <span>📚</span><span>Academics</span>
-                        </span>
-                        <svg class="accordion-arrow w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <div class="accordion-content pl-9 space-y-1 mt-1">
-                        <a href="/pages/student/academics/semester_registration.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Semester Registration</a>
-                        <a href="/pages/student/academics/register_units.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Register Units</a>
-                        <a href="/pages/student/academics/result_slip.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Academic Result Slip</a>
-                        <a href="/pages/student/academics/exam_card.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Exam Card</a>
-                        <a href="/pages/student/academics/registered_units.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Registered Units</a>
-                    </div>
-                </div>
-
-                <!-- Accommodation -->
-                <div class="accordion-item">
-                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
-                        <span class="flex items-center space-x-3">
-                            <span>🏠</span><span>Accommodation</span>
-                        </span>
-                        <svg class="accordion-arrow w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <div class="accordion-content pl-9 space-y-1 mt-1">
-                        <a href="/pages/student/accommodation/hostel_booking.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Hostel Booking</a>
-                        <a href="/pages/student/accommodation/room_status.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Room Status</a>
-                    </div>
-                </div>
-
-                <!-- Student Requests -->
-                <div class="accordion-item">
-                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
-                        <span class="flex items-center space-x-3">
-                            <span>📝</span><span>Requests</span>
-                        </span>
-                        <svg class="accordion-arrow w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <div class="accordion-content pl-9 space-y-1 mt-1">
-                        <a href="/pages/student/requests/call_off.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Call Off</a>
-                        <a href="/pages/student/requests/interschool_transfer.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Inter‑school Transfer</a>
-                        <a href="/pages/student/requests/defer.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Defer</a>
-                        <a href="/pages/student/requests/resumption.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Resumption of Studies</a>
-                        <a href="/pages/student/requests/withdrawal.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Withdrawal</a>
-                        <a href="/pages/student/requests/supp_exam.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Supp/Retake/Special Exam</a>
-                    </div>
-                </div>
-
-                <!-- Library -->
-                <div class="accordion-item">
-                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
-                        <span class="flex items-center space-x-3">
-                            <span>📖</span><span>Library</span>
-                        </span>
-                        <svg class="accordion-arrow w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </button>
-                    <div class="accordion-content pl-9 space-y-1 mt-1">
-                        <a href="/pages/student/library/research_room_booking.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Research Room Booking</a>
-                        <a href="/pages/student/library/book_acquisition.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Book Acquisition</a>
-                    </div>
-                </div>
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <nav class="space-y-2">
+                <a href="/student_portal.html" class="block py-2 px-3 rounded bg-emerald-900">Dashboard</a>
+                <a href="/pages/student/finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
+                <a href="/pages/student/academics.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Academics</a>
+                <a href="/pages/student/accommodation.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Accommodation</a>
+                <a href="/pages/student/requests.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Student Requests</a>
+                <a href="/pages/student/library.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Library</a>
             </nav>
-
-            <!-- Logout -->
-            <div class="px-3 py-4 border-t border-emerald-700/40 mt-auto">
-                <button onclick="logout()" class="w-full flex items-center space-x-2 px-3 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition">
-                    <span>🚪</span><span>Logout</span>
-                </button>
+            <div class="mt-auto pt-8">
+                <button onclick="logout()" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded">Logout</button>
             </div>
         </aside>
 
-        <!-- Main Content (same as before) -->
-        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full bg-gray-50">
-            <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded-lg shadow">☰ Menu</button>
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+            <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded">
+                ☰ Menu
+            </button>
 
-            <!-- Welcome & Profile Header -->
-            <div class="bg-gradient-to-r from-emerald-700 to-emerald-600 rounded-2xl p-5 md:p-6 mb-6 shadow-md text-white">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex-1">
-                        <p class="text-emerald-100 text-sm">Welcome back,</p>
-                        <h1 class="text-2xl md:text-3xl font-bold mt-1" id="studentName">Student</h1>
-                        <div class="flex flex-wrap gap-3 mt-3 text-sm">
-                            <span class="bg-white/20 px-3 py-1 rounded-full" id="admissionNo">---</span>
-                            <span class="bg-white/20 px-3 py-1 rounded-full" id="enrollStatus">---</span>
-                        </div>
-                    </div>
-                    <div class="mt-4 sm:mt-0 flex-shrink-0">
-                        <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold" id="initials">SC</div>
-                    </div>
+            <div class="bg-white p-4 md:p-6 rounded-lg shadow mb-6" id="profileCard">
+                <h2 class="text-xl font-bold mb-2">Welcome, <span id="studentName">Student</span></h2>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 text-sm">
+                    <div><strong>Admission No:</strong> <span id="admissionNo">---</span></div>
+                    <div><strong>Status:</strong> <span id="enrollStatus">---</span></div>
+                    <div><strong>Phone:</strong> <span id="phone">---</span></div>
+                    <div><strong>Email:</strong> <span id="email">---</span></div>
                 </div>
             </div>
 
-            <!-- Notice Board -->
-            <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl p-4 mb-6 flex items-start space-x-3">
-                <span class="text-xl">📢</span>
-                <div>
-                    <h4 class="font-semibold">Important Notice</h4>
-                    <p class="text-sm mt-1">Semester registration for 2026/2027 opens on Monday. Ensure all fees are paid before registration.</p>
-                </div>
-            </div>
-
-            <!-- Quick Action Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mb-6">
-                <a href="/pages/student/finance/fee_payment.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center text-xl">💰</div>
-                    <div><h3 class="font-semibold text-gray-800">Fee Payment</h3><p class="text-sm text-gray-500">Check balance & pay</p></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                <a href="/pages/student/finance.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-emerald-700">💰 Finance</h3>
+                    <p class="text-gray-600 text-sm mt-2">Fee payment, invoices, statements</p>
                 </a>
-                <a href="/pages/student/academics/semester_registration.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-xl">📝</div>
-                    <div><h3 class="font-semibold text-gray-800">Register Units</h3><p class="text-sm text-gray-500">Semester registration</p></div>
+                <a href="/pages/student/academics.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-blue-700">📚 Academics</h3>
+                    <p class="text-gray-600 text-sm mt-2">Registration, units, results</p>
                 </a>
-                <a href="#" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-xl">📋</div>
-                    <div><h3 class="font-semibold text-gray-800">Results</h3><p class="text-sm text-gray-500">View examination results</p></div>
+                <a href="/pages/student/accommodation.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-purple-700">🏠 Accommodation</h3>
+                    <p class="text-gray-600 text-sm mt-2">Hostel booking</p>
                 </a>
-                <a href="#" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center text-xl">📅</div>
-                    <div><h3 class="font-semibold text-gray-800">Timetable</h3><p class="text-sm text-gray-500">Class schedule</p></div>
+                <a href="/pages/student/requests.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-orange-700">📝 Requests</h3>
+                    <p class="text-gray-600 text-sm mt-2">Call off, transfer, defer</p>
                 </a>
-                <a href="/pages/student/accommodation/hostel_booking.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-teal-100 rounded-full flex items-center justify-center text-xl">🏠</div>
-                    <div><h3 class="font-semibold text-gray-800">Hostel</h3><p class="text-sm text-gray-500">Book accommodation</p></div>
+                <a href="/pages/student/library.html" class="bg-white p-6 rounded-lg shadow hover:shadow-lg transition">
+                    <h3 class="font-bold text-lg text-teal-700">📖 Library</h3>
+                    <p class="text-gray-600 text-sm mt-2">Room booking, books</p>
                 </a>
-                <a href="/pages/student/requests/call_off.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-rose-100 rounded-full flex items-center justify-center text-xl">📄</div>
-                    <div><h3 class="font-semibold text-gray-800">Requests</h3><p class="text-sm text-gray-500">Defer, transfer, etc.</p></div>
-                </a>
-            </div>
-
-            <!-- Recent Activity / Summary -->
-            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
-                <h3 class="font-semibold text-gray-700 mb-4">📌 Current Semester Summary</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-emerald-600" id="registeredUnits">0</p>
-                        <p class="text-sm text-gray-500">Registered Units</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-600" id="feeBalance">KES 0</p>
-                        <p class="text-sm text-gray-500">Fee Balance</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-purple-600" id="examStatus">---</p>
-                        <p class="text-sm text-gray-500">Exam Status</p>
-                    </div>
-                </div>
             </div>
         </main>
     </div>
 
-    <script src="/assets/js/api.js"></script>
     <script>
-        // ---------- Accordion Toggle ----------
-        function toggleAccordion(button) {
-            const item = button.closest('.accordion-item');
-            item.classList.toggle('active');
-        }
-
-        // Allow multiple accordions open (optional)
-        // To keep only one open, uncomment the following loop:
-        // function toggleAccordion(button) {
-        //     const item = button.closest('.accordion-item');
-        //     const allItems = document.querySelectorAll('.accordion-item');
-        //     allItems.forEach(i => { if (i !== item) i.classList.remove('active'); });
-        //     item.classList.toggle('active');
-        // }
-
-        // ---------- Mobile Sidebar Toggle ----------
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebarContainer');
             const overlay = document.getElementById('mobileOverlay');
@@ -235,6 +76,7 @@
             overlay.classList.toggle('hidden');
         }
 
+        // Close sidebar when a link is clicked
         document.addEventListener('click', function(e) {
             if (e.target.tagName === 'A' && document.getElementById('sidebarContainer').classList.contains('-translate-x-full') === false && window.innerWidth < 768) {
                 toggleSidebar();
@@ -243,7 +85,6 @@
 
         function logout() { localStorage.clear(); window.location.href = '/index.html'; }
 
-        // ---------- Auth fetch ----------
         async function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('access_token');
             if (!token) { window.location.href = '/index.html'; return; }
@@ -265,22 +106,15 @@
             return response.json();
         }
 
-        // ---------- Load student profile ----------
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const profile = await fetchWithAuth('/api/students/profile');
                 document.getElementById('studentName').textContent = profile.first_name + ' ' + profile.last_name;
                 document.getElementById('admissionNo').textContent = profile.admission_number;
-                document.getElementById('enrollStatus').textContent = profile.enrollment_status.toUpperCase();
-                const initials = (profile.first_name.charAt(0) + profile.last_name.charAt(0)).toUpperCase();
-                document.getElementById('initials').textContent = initials || 'SC';
-                // Placeholder summary data
-                document.getElementById('registeredUnits').textContent = '5';
-                document.getElementById('feeBalance').textContent = 'KES 15,000';
-                document.getElementById('examStatus').textContent = 'Pending';
-            } catch (err) {
-                console.error(err);
-            }
+                document.getElementById('enrollStatus').textContent = profile.enrollment_status;
+                document.getElementById('phone').textContent = profile.phone || '---';
+                document.getElementById('email').textContent = profile.admission_number + '@embucollege.ac.ke';
+            } catch (err) { console.error(err); }
         });
     </script>
 </body>

@@ -13,6 +13,7 @@ class Staff(db.Model):
     date_joined = db.Column(db.Date)
     phone = db.Column(db.String(15))
 
+    # HR relations
     leave_requests = db.relationship('LeaveRequest', backref='staff', lazy=True)
     salary_records = db.relationship('Salary', backref='staff', lazy=True)
 

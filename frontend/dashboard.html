@@ -8,13 +8,24 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-50">
-    <div class="flex h-screen">
-        <!-- Sidebar will be inserted by JavaScript -->
-        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 hidden md:block"></aside>
+    <div class="flex h-screen overflow-hidden">
+        <!-- Mobile menu backdrop -->
+        <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onclick="toggleSidebar()"></div>
+
+        <!-- Sidebar -->
+        <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 overflow-y-auto">
+            <!-- Sidebar content inserted by JS -->
+        </aside>
+
         <!-- Main Content -->
-        <main class="flex-1 p-6 overflow-y-auto" id="mainContent">
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full" id="mainContent">
+            <!-- Hamburger button (mobile) -->
+            <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded">
+                ☰ Menu
+            </button>
+
             <div id="dashboardContent">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
                     <div class="bg-white p-4 rounded-lg shadow">
                         <h3 class="text-gray-500 text-sm">Total Students</h3>
                         <p id="totalStudents" class="text-2xl font-bold">0</p>
@@ -32,7 +43,7 @@
                         <p id="totalBooks" class="text-2xl font-bold">0</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <div class="bg-white p-4 rounded-lg shadow">
                         <canvas id="enrollmentChart"></canvas>
                     </div>
@@ -124,12 +135,26 @@
             document.getElementById('sidebarContainer').innerHTML = html;
         }
 
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarContainer');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        // Close sidebar when a link is clicked (mobile)
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && document.getElementById('sidebarContainer').classList.contains('-translate-x-full') === false && window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        });
+
         function logout() {
             localStorage.clear();
             window.location.href = '/index.html';
         }
 
-        // ========== Auth fetch (from shared api.js) ==========
+        // ========== Auth fetch ==========
         async function fetchWithAuth(url, options = {}) {
             const token = localStorage.getItem('access_token');
             if (!token) { window.location.href = '/index.html'; return; }
@@ -154,7 +179,7 @@
             return response.json();
         }
 
-        // ========== Dashboard stats (only if role allows) ==========
+        // ========== Dashboard stats ==========
         async function loadDashboardStats() {
             try {
                 const stats = await fetchWithAuth('/api/dashboard/stats');
@@ -168,14 +193,16 @@
                     data: {
                         labels: stats.enrollment_labels || [],
                         datasets: [{ label: 'Enrollments', data: stats.enrollment_data || [], backgroundColor: '#059669' }]
-                    }
+                    },
+                    options: { responsive: true, maintainAspectRatio: true }
                 });
                 new Chart(document.getElementById('revenueChart'), {
                     type: 'line',
                     data: {
                         labels: stats.revenue_labels || [],
                         datasets: [{ label: 'Revenue (KES)', data: stats.revenue_data || [], borderColor: '#059669', backgroundColor: 'rgba(5,150,105,0.1)' }]
-                    }
+                    },
+                    options: { responsive: true, maintainAspectRatio: true }
                 });
             } catch (err) { console.error(err); }
         }
@@ -185,11 +212,10 @@
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user) { window.location.href = '/index.html'; return; }
             buildSidebar(user.role);
-            // Only load dashboard stats if NOT a student (students go to portal)
             if (user.role !== 'student') {
                 loadDashboardStats();
             } else {
-                window.location.href = '/student_portal.html'; // redirect students to portal
+                window.location.href = '/student_portal.html';
             }
         });
     </script>

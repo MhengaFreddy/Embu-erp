@@ -16,6 +16,7 @@ def stk_push(phone_number, amount, account_reference):
     passkey = current_app.config['MPESA_PASSKEY']
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     password = b64encode(f"{shortcode}{passkey}{timestamp}".encode()).decode()
+
     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
     payload = {
         "BusinessShortCode": shortcode,
