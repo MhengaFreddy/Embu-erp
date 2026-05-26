@@ -111,17 +111,20 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py ---
+# --- students/__init__.py (UPDATED with profile + finances) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from ...models.students import Student
 from ...models.users import User, Role
+from ...models.academic import Enrollment
+from ...models.finance import Invoice, Payment
 from ...extensions import db
 
 students_bp = Blueprint('students', __name__)
 
+# ── Profile endpoint for the logged‑in student ──
 @students_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_my_profile():
@@ -129,12 +132,51 @@ def get_my_profile():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'No student profile found'}), 404
+
+    # Try to get the programme from the first enrolment
+    programme = None
+    enrollment = Enrollment.query.filter_by(student_id=student.id).first()
+    if enrollment:
+        unit = enrollment.unit
+        if unit and unit.course:
+            programme = unit.course.name
+
     return jsonify({
-        'id': student.id, 'admission_number': student.admission_number,
-        'first_name': student.first_name, 'last_name': student.last_name,
-        'enrollment_status': student.enrollment_status, 'phone': student.phone
+        'id': student.id,
+        'admission_number': student.admission_number,
+        'first_name': student.first_name,
+        'last_name': student.last_name,
+        'date_of_birth': str(student.date_of_birth) if student.date_of_birth else None,
+        'gender': student.gender,
+        'phone': student.phone,
+        'address': student.address,
+        'enrollment_status': student.enrollment_status,
+        'programme': programme or 'Not assigned'
     })
 
+# ── Financial summary for the logged‑in student ──
+@students_bp.route('/finances', methods=['GET'])
+@jwt_required()
+def get_my_finances():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+
+    invoices = Invoice.query.filter_by(student_id=student.id).all()
+    total_billed = sum(float(inv.amount) for inv in invoices)
+    total_paid = 0.0
+    for inv in invoices:
+        total_paid += sum(float(p.amount) for p in inv.payments)
+    balance = total_billed - total_paid
+
+    return jsonify({
+        'total_billed': total_billed,
+        'total_paid': total_paid,
+        'balance': balance
+    })
+
+# ── List all students (admin) ──
 @students_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_students():
@@ -144,6 +186,35 @@ def get_students():
         'first_name': s.first_name, 'last_name': s.last_name,
         'enrollment_status': s.enrollment_status
     } for s in students])
+
+# ── Create student (admin) ──
+@students_bp.route('/', methods=['POST'])
+@jwt_required()
+def create_student():
+    data = request.get_json()
+    student_role = Role.query.filter_by(name='student').first()
+    email = f"{data['admission_number'].lower()}@embucollege.ac.ke"
+    if User.query.filter_by(email=email).first():
+        return jsonify({'error': 'Email already exists'}), 400
+    user = User(
+        email=email,
+        password_hash=generate_password_hash('student123'),
+        role_id=student_role.id
+    )
+    db.session.add(user)
+    db.session.flush()
+    student = Student(
+        user_id=user.id,
+        admission_number=data['admission_number'],
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        date_of_birth=data.get('date_of_birth'),
+        phone=data.get('phone'),
+        enrollment_status='active'
+    )
+    db.session.add(student)
+    db.session.commit()
+    return jsonify({'message': 'Student created', 'student_id': student.id, 'email': email, 'default_password': 'student123'}), 201
 EOF
 
 # --- academic/__init__.py (minimal) ---

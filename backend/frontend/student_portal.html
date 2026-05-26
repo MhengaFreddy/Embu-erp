@@ -11,7 +11,6 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #059669; border-radius: 3px; }
-        .quick-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,0.12); }
         .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .accordion-item.active .accordion-content { max-height: 500px; }
         .accordion-arrow { transition: transform 0.3s; }
@@ -20,8 +19,10 @@
 </head>
 <body class="bg-gray-50 font-sans antialiased">
     <div class="flex h-screen overflow-hidden">
+        <!-- Mobile overlay -->
         <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden" onclick="toggleSidebar()"></div>
 
+        <!-- Sidebar (accordion – unchanged) -->
         <aside id="sidebarContainer" class="w-64 bg-gradient-to-b from-emerald-800 to-emerald-900 text-white flex flex-col fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-2xl overflow-y-auto">
             <div class="px-5 py-6 border-b border-emerald-700/40">
                 <div class="flex items-center space-x-3">
@@ -126,76 +127,47 @@
             </div>
         </aside>
 
+        <!-- Main Content – Profile & Finances -->
         <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full bg-gray-50">
             <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded-lg shadow">
                 <i class="fas fa-bars"></i> Menu
             </button>
 
-            <div class="bg-gradient-to-r from-emerald-700 to-emerald-600 rounded-2xl p-5 md:p-6 mb-6 shadow-md text-white">
-                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <!-- Profile Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6 mb-6">
+                <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                    <div class="h-24 w-24 bg-emerald-100 rounded-full flex items-center justify-center text-3xl font-bold text-emerald-700 flex-shrink-0" id="profileInitials">SC</div>
                     <div class="flex-1">
-                        <p class="text-emerald-100 text-sm">Welcome back,</p>
-                        <h1 class="text-2xl md:text-3xl font-bold mt-1" id="studentName">Student</h1>
-                        <div class="flex flex-wrap gap-3 mt-3 text-sm">
-                            <span class="bg-white/20 px-3 py-1 rounded-full" id="admissionNo">---</span>
-                            <span class="bg-white/20 px-3 py-1 rounded-full" id="enrollStatus">---</span>
+                        <h2 class="text-2xl font-bold text-gray-800" id="profileName">Student Name</h2>
+                        <p class="text-sm text-gray-500" id="profileAdmission">Adm: ---</p>
+                        <p class="text-sm font-medium text-emerald-600 mt-1" id="profileProgramme">Programme: ---</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 mt-4 text-sm text-gray-600">
+                            <div><span class="font-medium">Email:</span> <span id="profileEmail">---</span></div>
+                            <div><span class="font-medium">Phone:</span> <span id="profilePhone">---</span></div>
+                            <div><span class="font-medium">Gender:</span> <span id="profileGender">---</span></div>
+                            <div><span class="font-medium">Date of Birth:</span> <span id="profileDOB">---</span></div>
+                            <div class="sm:col-span-2"><span class="font-medium">Address:</span> <span id="profileAddress">---</span></div>
+                            <div class="sm:col-span-2"><span class="font-medium">Enrollment Status:</span> <span id="profileStatus" class="px-2 py-0.5 bg-green-100 text-green-800 rounded-full text-xs">---</span></div>
                         </div>
                     </div>
-                    <div class="mt-4 sm:mt-0 flex-shrink-0">
-                        <div class="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center text-2xl font-bold" id="initials">SC</div>
-                    </div>
                 </div>
             </div>
 
-            <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-2xl p-4 mb-6 flex items-start space-x-3">
-                <i class="fas fa-bullhorn text-xl mt-0.5"></i>
-                <div>
-                    <h4 class="font-semibold">Important Notice</h4>
-                    <p class="text-sm mt-1">Semester registration for 2026/2027 opens on Monday. Ensure all fees are paid before registration.</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 mb-6">
-                <a href="/pages/student/finance/fee_payment.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center text-xl text-emerald-700"><i class="fas fa-credit-card"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Fee Payment</h3><p class="text-sm text-gray-500">Check balance & pay</p></div>
-                </a>
-                <a href="/pages/student/academics/semester_registration.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center text-xl text-blue-700"><i class="fas fa-pen-to-square"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Register Units</h3><p class="text-sm text-gray-500">Semester registration</p></div>
-                </a>
-                <a href="#" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-purple-100 rounded-full flex items-center justify-center text-xl text-purple-700"><i class="fas fa-list-check"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Results</h3><p class="text-sm text-gray-500">View examination results</p></div>
-                </a>
-                <a href="#" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-amber-100 rounded-full flex items-center justify-center text-xl text-amber-700"><i class="fas fa-calendar-days"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Timetable</h3><p class="text-sm text-gray-500">Class schedule</p></div>
-                </a>
-                <a href="/pages/student/accommodation/hostel_booking.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-teal-100 rounded-full flex items-center justify-center text-xl text-teal-700"><i class="fas fa-building"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Hostel</h3><p class="text-sm text-gray-500">Book accommodation</p></div>
-                </a>
-                <a href="/pages/student/requests/call_off.html" class="quick-card bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center space-x-4">
-                    <div class="h-12 w-12 bg-rose-100 rounded-full flex items-center justify-center text-xl text-rose-700"><i class="fas fa-paper-plane"></i></div>
-                    <div><h3 class="font-semibold text-gray-800">Requests</h3><p class="text-sm text-gray-500">Defer, transfer, etc.</p></div>
-                </a>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
-                <h3 class="font-semibold text-gray-700 mb-4"><i class="fas fa-chart-bar mr-2 text-emerald-600"></i>Current Semester Summary</h3>
+            <!-- Financial Summary Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4"><i class="fas fa-coins mr-2 text-emerald-600"></i>Financial Summary</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-emerald-600" id="registeredUnits">0</p>
-                        <p class="text-sm text-gray-500">Registered Units</p>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-sm text-gray-500">Total Billed</p>
+                        <p class="text-2xl font-bold text-gray-800" id="totalBilled">KES 0</p>
                     </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-blue-600" id="feeBalance">KES 0</p>
-                        <p class="text-sm text-gray-500">Fee Balance</p>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-sm text-gray-500">Total Paid</p>
+                        <p class="text-2xl font-bold text-emerald-600" id="totalPaid">KES 0</p>
                     </div>
-                    <div class="text-center">
-                        <p class="text-2xl font-bold text-purple-600" id="examStatus">---</p>
-                        <p class="text-sm text-gray-500">Exam Status</p>
+                    <div class="bg-gray-50 rounded-xl p-4 text-center">
+                        <p class="text-sm text-gray-500">Balance</p>
+                        <p class="text-2xl font-bold text-red-600" id="balance">KES 0</p>
                     </div>
                 </div>
             </div>
@@ -242,18 +214,30 @@
             return response.json();
         }
 
+        // Load profile and finances
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 const profile = await fetchWithAuth('/api/students/profile');
-                document.getElementById('studentName').textContent = profile.first_name + ' ' + profile.last_name;
-                document.getElementById('admissionNo').textContent = profile.admission_number;
-                document.getElementById('enrollStatus').textContent = profile.enrollment_status.toUpperCase();
+                document.getElementById('profileName').textContent = profile.first_name + ' ' + profile.last_name;
+                document.getElementById('profileAdmission').textContent = 'Adm: ' + profile.admission_number;
+                document.getElementById('profileProgramme').textContent = 'Programme: ' + (profile.programme || 'Not assigned');
+                document.getElementById('profileEmail').textContent = profile.admission_number + '@embucollege.ac.ke';
+                document.getElementById('profilePhone').textContent = profile.phone || '---';
+                document.getElementById('profileGender').textContent = profile.gender || '---';
+                document.getElementById('profileDOB').textContent = profile.date_of_birth || '---';
+                document.getElementById('profileAddress').textContent = profile.address || '---';
+                document.getElementById('profileStatus').textContent = profile.enrollment_status || '---';
+                // Initials
                 const initials = (profile.first_name.charAt(0) + profile.last_name.charAt(0)).toUpperCase();
-                document.getElementById('initials').textContent = initials || 'SC';
-                document.getElementById('registeredUnits').textContent = '5';
-                document.getElementById('feeBalance').textContent = 'KES 15,000';
-                document.getElementById('examStatus').textContent = 'Pending';
-            } catch (err) { console.error(err); }
+                document.getElementById('profileInitials').textContent = initials;
+
+                const finances = await fetchWithAuth('/api/students/finances');
+                document.getElementById('totalBilled').textContent = 'KES ' + (finances.total_billed || 0).toLocaleString();
+                document.getElementById('totalPaid').textContent = 'KES ' + (finances.total_paid || 0).toLocaleString();
+                document.getElementById('balance').textContent = 'KES ' + (finances.balance || 0).toLocaleString();
+            } catch (err) {
+                console.error(err);
+            }
         });
     </script>
 </body>
