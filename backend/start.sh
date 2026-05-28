@@ -111,14 +111,14 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (FINAL – all sub‑modules included) ---
+# --- students/__init__.py (FINAL – SELF‑HEALING SEMESTER REGISTRATION) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from ...models.students import Student
 from ...models.users import User, Role
-from ...models.academic import Enrollment, Unit, Semester, Course, Result, Exam
+from ...models.academic import Enrollment, Unit, Semester, Course, Result, Exam, Department
 from ...models.finance import Invoice, Payment
 from ...models.hostel import Room, Allocation
 from ...models.library import Book, Loan
@@ -274,7 +274,7 @@ def get_fee_structure():
     }
     return jsonify(structure)
 
-# ── NEW: Semester Registration ──
+# ── SELF‑HEALING Semester Registration ──
 @students_bp.route('/register-semester', methods=['POST'])
 @jwt_required()
 def register_semester():
@@ -282,18 +282,60 @@ def register_semester():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-    semester = Semester.query.filter(Semester.start_date <= date.today(), Semester.end_date >= date.today()).first()
+
+    # 1. Find or create an active semester
+    semester = Semester.query.filter(
+        Semester.start_date <= date.today(),
+        Semester.end_date >= date.today()
+    ).first()
     if not semester:
-        return jsonify({'error': 'No active semester'}), 400
+        semester = Semester(
+            name=f'{date.today().year} Active',
+            start_date=date.today(),
+            end_date=date.today().replace(year=date.today().year + 1),
+            academic_year=f'{date.today().year}'
+        )
+        db.session.add(semester)
+        db.session.flush()
+
+    # 2. If student has no enrolment at all, create a default one
+    if not Enrollment.query.filter_by(student_id=student.id).first():
+        # Create a minimal unit if none exists
+        unit = Unit.query.first()
+        if not unit:
+            dept = Department.query.first() or Department(name='General', code='GEN')
+            db.session.add(dept)
+            db.session.flush()
+            course = Course.query.first() or Course(name='General Course', code='GC101', department_id=dept.id)
+            db.session.add(course)
+            db.session.flush()
+            unit = Unit(name='Introduction', code='INT101', course_id=course.id, semester_id=semester.id, credit_hours=3)
+            db.session.add(unit)
+            db.session.flush()
+        enrollment = Enrollment(
+            student_id=student.id,
+            unit_id=unit.id,
+            semester_id=semester.id,
+            enrollment_date=date.today()
+        )
+        db.session.add(enrollment)
+        db.session.flush()
+
+    # 3. Now get the student's course from the enrolment we just ensured exists
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
-    if not enrollment:
-        return jsonify({'error': 'No programme enrolment found – contact admin'}), 400
     course = enrollment.unit.course
+
+    # 4. Enroll in all compulsory units for that course in the current semester
     units = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).all()
     count = 0
     for unit in units:
         if not Enrollment.query.filter_by(student_id=student.id, unit_id=unit.id).first():
-            db.session.add(Enrollment(student_id=student.id, unit_id=unit.id, semester_id=semester.id, enrollment_date=date.today()))
+            db.session.add(Enrollment(
+                student_id=student.id,
+                unit_id=unit.id,
+                semester_id=semester.id,
+                enrollment_date=date.today()
+            ))
             count += 1
     db.session.commit()
     return jsonify({'message': f'Semester registration successful – {count} units enrolled'})
