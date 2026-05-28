@@ -111,7 +111,7 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (SELF‑HEALING available‑units) ---
+# --- students/__init__.py (SELF‑HEALING available‑units, 5 default units) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -335,7 +335,7 @@ def register_semester():
     db.session.commit()
     return jsonify({'message': f'Semester registration successful – {count} units enrolled'})
 
-# ── Available Units (SELF‑HEALING) ──
+# ── Available Units (SELF‑HEALING – creates 5 default units) ──
 @students_bp.route('/available-units', methods=['GET'])
 @jwt_required()
 def get_available_units():
@@ -346,6 +346,7 @@ def get_available_units():
 
     # Ensure the student has at least a default enrollment
     if not Enrollment.query.filter_by(student_id=student.id).first():
+        # Create active semester if needed
         semester = Semester.query.filter(
             Semester.start_date <= date.today(),
             Semester.end_date >= date.today()
@@ -360,24 +361,41 @@ def get_available_units():
             db.session.add(semester)
             db.session.flush()
 
-        unit = Unit.query.first()
-        if not unit:
-            dept = Department.query.first() or Department(name='General', code='GEN')
+        # Create a department and course if none exist
+        dept = Department.query.first()
+        if not dept:
+            dept = Department(name='Information Technology', code='IT')
             db.session.add(dept)
             db.session.flush()
-            course = Course.query.first() or Course(name='General Course', code='GC101', department_id=dept.id)
+
+        course = Course.query.first()
+        if not course:
+            course = Course(name='Bachelor of Science in IT', code='BSIT', department_id=dept.id)
             db.session.add(course)
             db.session.flush()
-            unit = Unit(name='Introduction', code='INT101', course_id=course.id, semester_id=semester.id, credit_hours=3)
-            db.session.add(unit)
-            db.session.flush()
-        else:
-            course = unit.course
-            semester = unit.semester
 
+        # Create 5 default units
+        default_units = [
+            ('Introduction to Programming', 'BSIT101', 3),
+            ('Database Systems', 'BSIT102', 3),
+            ('Web Development', 'BSIT103', 3),
+            ('Data Structures and Algorithms', 'BSIT104', 4),
+            ('Software Engineering', 'BSIT105', 3)
+        ]
+        created_units = []
+        for name, code, credits in default_units:
+            if not Unit.query.filter_by(code=code, semester_id=semester.id).first():
+                unit = Unit(name=name, code=code, course_id=course.id, semester_id=semester.id, credit_hours=credits)
+                db.session.add(unit)
+                created_units.append(unit)
+        if created_units:
+            db.session.flush()
+
+        # Enroll the student in the first unit to establish a baseline enrollment
+        first_unit = created_units[0] if created_units else Unit.query.filter_by(course_id=course.id, semester_id=semester.id).first()
         enrollment = Enrollment(
             student_id=student.id,
-            unit_id=unit.id,
+            unit_id=first_unit.id,
             semester_id=semester.id,
             enrollment_date=date.today()
         )
