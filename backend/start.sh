@@ -111,7 +111,7 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (UPDATED with profile + finances) ---
+# --- students/__init__.py (UPDATED with invoices + pay) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -121,10 +121,11 @@ from ...models.users import User, Role
 from ...models.academic import Enrollment
 from ...models.finance import Invoice, Payment
 from ...extensions import db
+from datetime import datetime
 
 students_bp = Blueprint('students', __name__)
 
-# ── Profile endpoint for the logged‑in student ──
+# ── Profile endpoint ──
 @students_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_my_profile():
@@ -133,7 +134,6 @@ def get_my_profile():
     if not student:
         return jsonify({'error': 'No student profile found'}), 404
 
-    # Try to get the programme from the first enrolment
     programme = None
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
     if enrollment:
@@ -154,7 +154,7 @@ def get_my_profile():
         'programme': programme or 'Not assigned'
     })
 
-# ── Financial summary for the logged‑in student ──
+# ── Financial summary ──
 @students_bp.route('/finances', methods=['GET'])
 @jwt_required()
 def get_my_finances():
@@ -175,6 +175,65 @@ def get_my_finances():
         'total_paid': total_paid,
         'balance': balance
     })
+
+# ── List student invoices ──
+@students_bp.route('/invoices', methods=['GET'])
+@jwt_required()
+def get_my_invoices():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+
+    invoices = Invoice.query.filter_by(student_id=student.id).all()
+    result = []
+    for inv in invoices:
+        paid = sum(float(p.amount) for p in inv.payments)
+        result.append({
+            'id': inv.id,
+            'semester_id': inv.semester_id,
+            'amount': float(inv.amount),
+            'due_date': str(inv.due_date),
+            'status': inv.status,
+            'paid': paid,
+            'balance': float(inv.amount) - paid
+        })
+    return jsonify(result)
+
+# ── Pay an invoice ──
+@students_bp.route('/pay', methods=['POST'])
+@jwt_required()
+def pay_invoice():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+
+    data = request.get_json()
+    invoice_id = data.get('invoice_id')
+    amount = float(data.get('amount', 0))
+
+    invoice = Invoice.query.get(invoice_id)
+    if not invoice or invoice.student_id != student.id:
+        return jsonify({'error': 'Invalid invoice'}), 404
+
+    if amount <= 0:
+        return jsonify({'error': 'Amount must be positive'}), 400
+
+    payment = Payment(
+        invoice_id=invoice.id,
+        amount=amount,
+        method='mpesa',
+        transaction_reference=f"TEST{datetime.utcnow().timestamp()}",
+        payment_date=datetime.utcnow()
+    )
+    db.session.add(payment)
+
+    total_paid = sum(float(p.amount) for p in invoice.payments) + amount
+    invoice.status = 'paid' if total_paid >= float(invoice.amount) else 'partial'
+    db.session.commit()
+
+    return jsonify({'message': 'Payment successful', 'paid': amount}), 201
 
 # ── List all students (admin) ──
 @students_bp.route('/', methods=['GET'])
