@@ -111,7 +111,7 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (FINAL – SELF‑HEALING SEMESTER REGISTRATION) ---
+# --- students/__init__.py (SELF‑HEALING available‑units) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -210,7 +210,7 @@ def pay_invoice():
     db.session.commit()
     return jsonify({'message': 'Payment successful', 'paid': amount}), 201
 
-# ── NEW: Proforma Invoice ──
+# ── Proforma Invoice ──
 @students_bp.route('/proforma', methods=['GET'])
 @jwt_required()
 def get_proforma():
@@ -230,7 +230,7 @@ def get_proforma():
         'admission_number': student.admission_number
     })
 
-# ── NEW: My Payments (Receipts) ──
+# ── My Payments (Receipts) ──
 @students_bp.route('/payments', methods=['GET'])
 @jwt_required()
 def get_my_payments():
@@ -252,7 +252,7 @@ def get_my_payments():
             })
     return jsonify(payments)
 
-# ── NEW: Fee Structure ──
+# ── Fee Structure ──
 @students_bp.route('/fee-structure', methods=['GET'])
 @jwt_required()
 def get_fee_structure():
@@ -274,7 +274,7 @@ def get_fee_structure():
     }
     return jsonify(structure)
 
-# ── SELF‑HEALING Semester Registration ──
+# ── Semester Registration (self‑healing) ──
 @students_bp.route('/register-semester', methods=['POST'])
 @jwt_required()
 def register_semester():
@@ -283,7 +283,6 @@ def register_semester():
     if not student:
         return jsonify({'error': 'Student not found'}), 404
 
-    # 1. Find or create an active semester
     semester = Semester.query.filter(
         Semester.start_date <= date.today(),
         Semester.end_date >= date.today()
@@ -298,9 +297,7 @@ def register_semester():
         db.session.add(semester)
         db.session.flush()
 
-    # 2. If student has no enrolment at all, create a default one
     if not Enrollment.query.filter_by(student_id=student.id).first():
-        # Create a minimal unit if none exists
         unit = Unit.query.first()
         if not unit:
             dept = Department.query.first() or Department(name='General', code='GEN')
@@ -321,11 +318,9 @@ def register_semester():
         db.session.add(enrollment)
         db.session.flush()
 
-    # 3. Now get the student's course from the enrolment we just ensured exists
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
     course = enrollment.unit.course
 
-    # 4. Enroll in all compulsory units for that course in the current semester
     units = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).all()
     count = 0
     for unit in units:
@@ -340,7 +335,7 @@ def register_semester():
     db.session.commit()
     return jsonify({'message': f'Semester registration successful – {count} units enrolled'})
 
-# ── Academics ──
+# ── Available Units (SELF‑HEALING) ──
 @students_bp.route('/available-units', methods=['GET'])
 @jwt_required()
 def get_available_units():
@@ -348,22 +343,66 @@ def get_available_units():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'Student not found'}), 404
+
+    # Ensure the student has at least a default enrollment
+    if not Enrollment.query.filter_by(student_id=student.id).first():
+        semester = Semester.query.filter(
+            Semester.start_date <= date.today(),
+            Semester.end_date >= date.today()
+        ).first()
+        if not semester:
+            semester = Semester(
+                name=f'{date.today().year} Active',
+                start_date=date.today(),
+                end_date=date.today().replace(year=date.today().year + 1),
+                academic_year=f'{date.today().year}'
+            )
+            db.session.add(semester)
+            db.session.flush()
+
+        unit = Unit.query.first()
+        if not unit:
+            dept = Department.query.first() or Department(name='General', code='GEN')
+            db.session.add(dept)
+            db.session.flush()
+            course = Course.query.first() or Course(name='General Course', code='GC101', department_id=dept.id)
+            db.session.add(course)
+            db.session.flush()
+            unit = Unit(name='Introduction', code='INT101', course_id=course.id, semester_id=semester.id, credit_hours=3)
+            db.session.add(unit)
+            db.session.flush()
+        else:
+            course = unit.course
+            semester = unit.semester
+
+        enrollment = Enrollment(
+            student_id=student.id,
+            unit_id=unit.id,
+            semester_id=semester.id,
+            enrollment_date=date.today()
+        )
+        db.session.add(enrollment)
+        db.session.commit()
+
+    # Now get the student's course and semester
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
-    if not enrollment:
-        return jsonify([])
-    unit = enrollment.unit
-    if not unit:
-        return jsonify([])
-    course = unit.course
-    semester = unit.semester
+    course = enrollment.unit.course
+    semester = enrollment.unit.semester
+
     units = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).all()
     result = []
     for u in units:
         already = Enrollment.query.filter_by(student_id=student.id, unit_id=u.id).first()
-        result.append({'unit_id': u.id, 'unit_code': u.code, 'unit_name': u.name,
-                       'credit_hours': u.credit_hours, 'enrolled': already is not None})
+        result.append({
+            'unit_id': u.id,
+            'unit_code': u.code,
+            'unit_name': u.name,
+            'credit_hours': u.credit_hours,
+            'enrolled': already is not None
+        })
     return jsonify(result)
 
+# ── Enroll in a unit ──
 @students_bp.route('/enroll', methods=['POST'])
 @jwt_required()
 def enroll_unit():
@@ -383,6 +422,7 @@ def enroll_unit():
     db.session.commit()
     return jsonify({'message': 'Enrolled successfully'}), 201
 
+# ── My Units ──
 @students_bp.route('/my-units', methods=['GET'])
 @jwt_required()
 def get_my_units():
@@ -399,6 +439,7 @@ def get_my_units():
                        'credit_hours': unit.credit_hours})
     return jsonify(result)
 
+# ── Results ──
 @students_bp.route('/results', methods=['GET'])
 @jwt_required()
 def get_my_results():
@@ -416,6 +457,7 @@ def get_my_results():
                          'grade': r.grade, 'gpa': float(r.gpa_points) if r.gpa_points else 0})
     return jsonify(res_list)
 
+# ── Exam Card ──
 @students_bp.route('/exam-card', methods=['GET'])
 @jwt_required()
 def get_exam_card():
@@ -477,7 +519,7 @@ def research_room_booking():
 def book_acquisition():
     return jsonify({'message': 'Book acquisition request submitted'})
 
-# ── Student Requests (call‑off, defer, etc.) ──
+# ── Student Requests ──
 @students_bp.route('/submit-request', methods=['POST'])
 @jwt_required()
 def submit_request():
