@@ -111,7 +111,7 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (SELF‑HEALING available‑units, 5 default units) ---
+# --- students/__init__.py (ALWAYS ensures 5 default units) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -335,7 +335,7 @@ def register_semester():
     db.session.commit()
     return jsonify({'message': f'Semester registration successful – {count} units enrolled'})
 
-# ── Available Units (SELF‑HEALING – creates 5 default units) ──
+# ── Available Units (ALWAYS ensures 5 default units exist) ──
 @students_bp.route('/available-units', methods=['GET'])
 @jwt_required()
 def get_available_units():
@@ -344,66 +344,70 @@ def get_available_units():
     if not student:
         return jsonify({'error': 'Student not found'}), 404
 
-    # Ensure the student has at least a default enrollment
-    if not Enrollment.query.filter_by(student_id=student.id).first():
-        # Create active semester if needed
-        semester = Semester.query.filter(
-            Semester.start_date <= date.today(),
-            Semester.end_date >= date.today()
-        ).first()
-        if not semester:
-            semester = Semester(
-                name=f'{date.today().year} Active',
-                start_date=date.today(),
-                end_date=date.today().replace(year=date.today().year + 1),
-                academic_year=f'{date.today().year}'
-            )
-            db.session.add(semester)
-            db.session.flush()
-
-        # Create a department and course if none exist
-        dept = Department.query.first()
-        if not dept:
-            dept = Department(name='Information Technology', code='IT')
-            db.session.add(dept)
-            db.session.flush()
-
-        course = Course.query.first()
-        if not course:
-            course = Course(name='Bachelor of Science in IT', code='BSIT', department_id=dept.id)
-            db.session.add(course)
-            db.session.flush()
-
-        # Create 5 default units
-        default_units = [
-            ('Introduction to Programming', 'BSIT101', 3),
-            ('Database Systems', 'BSIT102', 3),
-            ('Web Development', 'BSIT103', 3),
-            ('Data Structures and Algorithms', 'BSIT104', 4),
-            ('Software Engineering', 'BSIT105', 3)
-        ]
-        created_units = []
-        for name, code, credits in default_units:
-            if not Unit.query.filter_by(code=code, semester_id=semester.id).first():
-                unit = Unit(name=name, code=code, course_id=course.id, semester_id=semester.id, credit_hours=credits)
-                db.session.add(unit)
-                created_units.append(unit)
-        if created_units:
-            db.session.flush()
-
-        # Enroll the student in the first unit to establish a baseline enrollment
-        first_unit = created_units[0] if created_units else Unit.query.filter_by(course_id=course.id, semester_id=semester.id).first()
-        enrollment = Enrollment(
-            student_id=student.id,
-            unit_id=first_unit.id,
-            semester_id=semester.id,
-            enrollment_date=date.today()
+    # ── Always ensure the required academic structure exists ──
+    # Active semester
+    semester = Semester.query.filter(
+        Semester.start_date <= date.today(),
+        Semester.end_date >= date.today()
+    ).first()
+    if not semester:
+        semester = Semester(
+            name=f'{date.today().year} Active',
+            start_date=date.today(),
+            end_date=date.today().replace(year=date.today().year + 1),
+            academic_year=f'{date.today().year}'
         )
-        db.session.add(enrollment)
-        db.session.commit()
+        db.session.add(semester)
+        db.session.flush()
 
-    # Now get the student's course and semester
+    # Department and course
+    dept = Department.query.first()
+    if not dept:
+        dept = Department(name='Information Technology', code='IT')
+        db.session.add(dept)
+        db.session.flush()
+    course = Course.query.first()
+    if not course:
+        course = Course(name='Bachelor of Science in IT', code='BSIT', department_id=dept.id)
+        db.session.add(course)
+        db.session.flush()
+    else:
+        if not course.department_id:
+            course.department_id = dept.id
+            db.session.flush()
+
+    # Default units – always create if missing
+    default_units = [
+        ('Introduction to Programming', 'BSIT101', 3),
+        ('Database Systems', 'BSIT102', 3),
+        ('Web Development', 'BSIT103', 3),
+        ('Data Structures and Algorithms', 'BSIT104', 4),
+        ('Software Engineering', 'BSIT105', 3)
+    ]
+    for name, code, credits in default_units:
+        if not Unit.query.filter_by(code=code, semester_id=semester.id).first():
+            unit = Unit(name=name, code=code, course_id=course.id, semester_id=semester.id, credit_hours=credits)
+            db.session.add(unit)
+    db.session.flush()
+
+    # Ensure the student has at least one enrollment to know their course/semester
+    if not Enrollment.query.filter_by(student_id=student.id).first():
+        first_unit = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).first()
+        if first_unit:
+            enrollment = Enrollment(
+                student_id=student.id,
+                unit_id=first_unit.id,
+                semester_id=semester.id,
+                enrollment_date=date.today()
+            )
+            db.session.add(enrollment)
+    db.session.commit()
+
+    # Now get the student's course and semester from their first enrollment
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
+    if not enrollment:
+        return jsonify([])
+
     course = enrollment.unit.course
     semester = enrollment.unit.semester
 
