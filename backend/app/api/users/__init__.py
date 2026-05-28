@@ -10,14 +10,4 @@ users_bp = Blueprint('users', __name__)
 @role_required('super_admin', 'principal')
 def get_users():
     users = User.query.all()
-    result = []
-    for u in users:
-        result.append({
-            'id': u.id,
-            'email': u.email,
-            'role': u.role.name if u.role else 'N/A',
-            'is_active': u.is_active,
-            'last_login': str(u.last_login) if u.last_login else None,
-            'created_at': str(u.created_at)
-        })
-    return jsonify(result)
+    return jsonify([{'id': u.id, 'email': u.email, 'role': u.role.name if u.role else 'N/A', 'is_active': u.is_active, 'last_login': str(u.last_login) if u.last_login else None, 'created_at': str(u.created_at)} for u in users])
