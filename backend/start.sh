@@ -111,21 +111,23 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (UPDATED with invoices + pay) ---
+# --- students/__init__.py (FULL SUB‑MODULES) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash
 from ...models.students import Student
 from ...models.users import User, Role
-from ...models.academic import Enrollment
+from ...models.academic import Enrollment, Unit, Semester, Course, Result, Exam
 from ...models.finance import Invoice, Payment
+from ...models.hostel import Room, Allocation
+from ...models.library import Book, Loan
 from ...extensions import db
-from datetime import datetime
+from datetime import datetime, date
 
 students_bp = Blueprint('students', __name__)
 
-# ── Profile endpoint ──
+# ── Profile ──
 @students_bp.route('/profile', methods=['GET'])
 @jwt_required()
 def get_my_profile():
@@ -133,14 +135,12 @@ def get_my_profile():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'No student profile found'}), 404
-
     programme = None
     enrollment = Enrollment.query.filter_by(student_id=student.id).first()
     if enrollment:
         unit = enrollment.unit
         if unit and unit.course:
             programme = unit.course.name
-
     return jsonify({
         'id': student.id,
         'admission_number': student.admission_number,
@@ -154,7 +154,7 @@ def get_my_profile():
         'programme': programme or 'Not assigned'
     })
 
-# ── Financial summary ──
+# ── Finances ──
 @students_bp.route('/finances', methods=['GET'])
 @jwt_required()
 def get_my_finances():
@@ -162,21 +162,14 @@ def get_my_finances():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-
     invoices = Invoice.query.filter_by(student_id=student.id).all()
     total_billed = sum(float(inv.amount) for inv in invoices)
     total_paid = 0.0
     for inv in invoices:
         total_paid += sum(float(p.amount) for p in inv.payments)
     balance = total_billed - total_paid
+    return jsonify({'total_billed': total_billed, 'total_paid': total_paid, 'balance': balance})
 
-    return jsonify({
-        'total_billed': total_billed,
-        'total_paid': total_paid,
-        'balance': balance
-    })
-
-# ── List student invoices ──
 @students_bp.route('/invoices', methods=['GET'])
 @jwt_required()
 def get_my_invoices():
@@ -184,23 +177,15 @@ def get_my_invoices():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-
     invoices = Invoice.query.filter_by(student_id=student.id).all()
     result = []
     for inv in invoices:
         paid = sum(float(p.amount) for p in inv.payments)
-        result.append({
-            'id': inv.id,
-            'semester_id': inv.semester_id,
-            'amount': float(inv.amount),
-            'due_date': str(inv.due_date),
-            'status': inv.status,
-            'paid': paid,
-            'balance': float(inv.amount) - paid
-        })
+        result.append({'id': inv.id, 'semester_id': inv.semester_id, 'amount': float(inv.amount),
+                       'due_date': str(inv.due_date), 'status': inv.status, 'paid': paid,
+                       'balance': float(inv.amount) - paid})
     return jsonify(result)
 
-# ── Pay an invoice ──
 @students_bp.route('/pay', methods=['POST'])
 @jwt_required()
 def pay_invoice():
@@ -208,45 +193,182 @@ def pay_invoice():
     student = Student.query.filter_by(user_id=user_id).first()
     if not student:
         return jsonify({'error': 'Student not found'}), 404
-
     data = request.get_json()
     invoice_id = data.get('invoice_id')
     amount = float(data.get('amount', 0))
-
     invoice = Invoice.query.get(invoice_id)
     if not invoice or invoice.student_id != student.id:
         return jsonify({'error': 'Invalid invoice'}), 404
-
     if amount <= 0:
         return jsonify({'error': 'Amount must be positive'}), 400
-
-    payment = Payment(
-        invoice_id=invoice.id,
-        amount=amount,
-        method='mpesa',
-        transaction_reference=f"TEST{datetime.utcnow().timestamp()}",
-        payment_date=datetime.utcnow()
-    )
+    payment = Payment(invoice_id=invoice.id, amount=amount, method='mpesa',
+                      transaction_reference=f"TEST{datetime.utcnow().timestamp()}",
+                      payment_date=datetime.utcnow())
     db.session.add(payment)
-
     total_paid = sum(float(p.amount) for p in invoice.payments) + amount
     invoice.status = 'paid' if total_paid >= float(invoice.amount) else 'partial'
     db.session.commit()
-
     return jsonify({'message': 'Payment successful', 'paid': amount}), 201
 
-# ── List all students (admin) ──
+# ── Academics ──
+@students_bp.route('/available-units', methods=['GET'])
+@jwt_required()
+def get_available_units():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    enrollment = Enrollment.query.filter_by(student_id=student.id).first()
+    if not enrollment:
+        return jsonify([])
+    unit = enrollment.unit
+    if not unit:
+        return jsonify([])
+    course = unit.course
+    semester = unit.semester
+    units = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).all()
+    result = []
+    for u in units:
+        already = Enrollment.query.filter_by(student_id=student.id, unit_id=u.id).first()
+        result.append({'unit_id': u.id, 'unit_code': u.code, 'unit_name': u.name,
+                       'credit_hours': u.credit_hours, 'enrolled': already is not None})
+    return jsonify(result)
+
+@students_bp.route('/enroll', methods=['POST'])
+@jwt_required()
+def enroll_unit():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    data = request.get_json()
+    unit_id = data.get('unit_id')
+    unit = Unit.query.get(unit_id)
+    if not unit:
+        return jsonify({'error': 'Unit not found'}), 404
+    if Enrollment.query.filter_by(student_id=student.id, unit_id=unit_id).first():
+        return jsonify({'error': 'Already enrolled'}), 400
+    enrollment = Enrollment(student_id=student.id, unit_id=unit_id, semester_id=unit.semester_id, enrollment_date=date.today())
+    db.session.add(enrollment)
+    db.session.commit()
+    return jsonify({'message': 'Enrolled successfully'}), 201
+
+@students_bp.route('/my-units', methods=['GET'])
+@jwt_required()
+def get_my_units():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    enrollments = Enrollment.query.filter_by(student_id=student.id).all()
+    result = []
+    for e in enrollments:
+        unit = e.unit
+        result.append({'unit_id': unit.id, 'unit_code': unit.code, 'unit_name': unit.name,
+                       'semester': unit.semester.name if unit.semester else '',
+                       'credit_hours': unit.credit_hours})
+    return jsonify(result)
+
+@students_bp.route('/results', methods=['GET'])
+@jwt_required()
+def get_my_results():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    results = Result.query.filter_by(student_id=student.id).all()
+    res_list = []
+    for r in results:
+        exam = r.exam
+        unit = exam.unit if exam else None
+        res_list.append({'unit_code': unit.code if unit else '', 'unit_name': unit.name if unit else '',
+                         'exam_type': exam.exam_type if exam else '', 'marks': float(r.marks),
+                         'grade': r.grade, 'gpa': float(r.gpa_points) if r.gpa_points else 0})
+    return jsonify(res_list)
+
+@students_bp.route('/exam-card', methods=['GET'])
+@jwt_required()
+def get_exam_card():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    enrollments = Enrollment.query.filter_by(student_id=student.id).all()
+    card = []
+    for e in enrollments:
+        unit = e.unit
+        exams = Exam.query.filter_by(unit_id=unit.id).all()
+        for exam in exams:
+            card.append({'unit_code': unit.code, 'unit_name': unit.name,
+                         'exam_date': str(exam.exam_date), 'exam_type': exam.exam_type})
+    return jsonify(card)
+
+# ── Accommodation ──
+@students_bp.route('/book-hostel', methods=['POST'])
+@jwt_required()
+def book_hostel():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    if Allocation.query.filter_by(student_id=student.id, end_date=None).first():
+        return jsonify({'error': 'Already have an active allocation'}), 400
+    room = Room.query.filter(Room.occupied_beds < Room.capacity).first()
+    if not room:
+        return jsonify({'error': 'No rooms available'}), 400
+    allocation = Allocation(student_id=student.id, room_id=room.id, start_date=date.today())
+    room.occupied_beds += 1
+    db.session.add(allocation)
+    db.session.commit()
+    return jsonify({'message': 'Room booked', 'room': room.room_number})
+
+@students_bp.route('/my-allocation', methods=['GET'])
+@jwt_required()
+def my_allocation():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    alloc = Allocation.query.filter_by(student_id=student.id, end_date=None).first()
+    if not alloc:
+        return jsonify({'allocated': False})
+    room = alloc.room
+    return jsonify({'allocated': True, 'room_number': room.room_number, 'hostel': room.hostel.name if room.hostel else '',
+                    'start_date': str(alloc.start_date), 'fee_per_semester': float(room.fee_per_semester)})
+
+# ── Library Services ──
+@students_bp.route('/research-room-booking', methods=['POST'])
+@jwt_required()
+def research_room_booking():
+    return jsonify({'message': 'Research room booking request submitted'})
+
+@students_bp.route('/book-acquisition', methods=['POST'])
+@jwt_required()
+def book_acquisition():
+    return jsonify({'message': 'Book acquisition request submitted'})
+
+# ── Student Requests (call‑off, defer, etc.) ──
+@students_bp.route('/submit-request', methods=['POST'])
+@jwt_required()
+def submit_request():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    data = request.get_json()
+    req_type = data.get('type')
+    details = data.get('details', '')
+    return jsonify({'message': f'{req_type} request submitted', 'details': details})
+
+# ── List/Create (admin) ──
 @students_bp.route('/', methods=['GET'])
 @jwt_required()
 def get_students():
     students = Student.query.all()
-    return jsonify([{
-        'id': s.id, 'admission_number': s.admission_number,
-        'first_name': s.first_name, 'last_name': s.last_name,
-        'enrollment_status': s.enrollment_status
-    } for s in students])
+    return jsonify([{'id': s.id, 'admission_number': s.admission_number,
+                     'first_name': s.first_name, 'last_name': s.last_name,
+                     'enrollment_status': s.enrollment_status} for s in students])
 
-# ── Create student (admin) ──
 @students_bp.route('/', methods=['POST'])
 @jwt_required()
 def create_student():
@@ -255,25 +377,17 @@ def create_student():
     email = f"{data['admission_number'].lower()}@embucollege.ac.ke"
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 400
-    user = User(
-        email=email,
-        password_hash=generate_password_hash('student123'),
-        role_id=student_role.id
-    )
+    user = User(email=email, password_hash=generate_password_hash('student123'), role_id=student_role.id)
     db.session.add(user)
     db.session.flush()
-    student = Student(
-        user_id=user.id,
-        admission_number=data['admission_number'],
-        first_name=data['first_name'],
-        last_name=data['last_name'],
-        date_of_birth=data.get('date_of_birth'),
-        phone=data.get('phone'),
-        enrollment_status='active'
-    )
+    student = Student(user_id=user.id, admission_number=data['admission_number'],
+                      first_name=data['first_name'], last_name=data['last_name'],
+                      date_of_birth=data.get('date_of_birth'), phone=data.get('phone'),
+                      enrollment_status='active')
     db.session.add(student)
     db.session.commit()
-    return jsonify({'message': 'Student created', 'student_id': student.id, 'email': email, 'default_password': 'student123'}), 201
+    return jsonify({'message': 'Student created', 'student_id': student.id,
+                    'email': email, 'default_password': 'student123'}), 201
 EOF
 
 # --- academic/__init__.py (minimal) ---

@@ -1,0 +1,143 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Structure - Embu College</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { transition: all 0.2s ease; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #059669; border-radius: 3px; }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .accordion-item.active .accordion-content { max-height: 500px; }
+        .accordion-arrow { transition: transform 0.3s; }
+        .accordion-item.active .accordion-arrow { transform: rotate(90deg); }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+    <div class="flex h-screen overflow-hidden">
+        <div id="mobileOverlay" class="hidden fixed inset-0 bg-black bg-opacity-40 z-40 md:hidden" onclick="toggleSidebar()"></div>        <!-- Sidebar (accordion) -->
+        <aside id="sidebarContainer" class="w-64 bg-gradient-to-b from-emerald-800 to-emerald-900 text-white flex flex-col fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-2xl overflow-y-auto">
+            <div class="px-5 py-6 border-b border-emerald-700/40">
+                <div class="flex items-center space-x-3">
+                    <img src="/assets/logo.png" alt="Logo" class="h-10 w-10 rounded-full object-cover bg-white p-1">
+                    <div>
+                        <h1 class="text-base font-bold leading-tight">Embu College</h1>
+                        <p class="text-xs text-emerald-200">Student Portal</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <a href="/student_portal.html" class="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10">
+                    <i class="fas fa-th-large w-5 text-center"></i><span>Dashboard</span>
+                </a>
+
+                <!-- Finance -->
+                <div class="accordion-item">
+                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
+                        <span class="flex items-center space-x-3"><i class="fas fa-coins w-5 text-center"></i><span>Finance</span></span>
+                        <i class="accordion-arrow fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="accordion-content pl-9 space-y-1 mt-1">
+                        <a href="/pages/student/finance/fee_payment.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Payment</a>
+                        <a href="/pages/student/finance/proforma_invoice.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Proforma Invoice</a>
+                        <a href="/pages/student/finance/fee_statement.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Statement</a>
+                        <a href="/pages/student/finance/payment_receipt.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Payment Receipt</a>
+                        <a href="/pages/student/finance/fee_structure.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Fee Structure</a>
+                    </div>
+                </div>
+
+                <!-- Academics -->
+                <div class="accordion-item">
+                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
+                        <span class="flex items-center space-x-3"><i class="fas fa-book-open w-5 text-center"></i><span>Academics</span></span>
+                        <i class="accordion-arrow fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="accordion-content pl-9 space-y-1 mt-1">
+                        <a href="/pages/student/academics/semester_registration.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Semester Registration</a>
+                        <a href="/pages/student/academics/register_units.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Register Units</a>
+                        <a href="/pages/student/academics/result_slip.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Academic Result Slip</a>
+                        <a href="/pages/student/academics/exam_card.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Exam Card</a>
+                        <a href="/pages/student/academics/registered_units.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Registered Units</a>
+                    </div>
+                </div>
+
+                <!-- Accommodation -->
+                <div class="accordion-item">
+                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
+                        <span class="flex items-center space-x-3"><i class="fas fa-home w-5 text-center"></i><span>Accommodation</span></span>
+                        <i class="accordion-arrow fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="accordion-content pl-9 space-y-1 mt-1">
+                        <a href="/pages/student/accommodation/hostel_booking.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Hostel Booking</a>
+                        <a href="/pages/student/accommodation/room_status.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Room Status</a>
+                    </div>
+                </div>
+
+                <!-- Student Requests -->
+                <div class="accordion-item">
+                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
+                        <span class="flex items-center space-x-3"><i class="fas fa-file-alt w-5 text-center"></i><span>Requests</span></span>
+                        <i class="accordion-arrow fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="accordion-content pl-9 space-y-1 mt-1">
+                        <a href="/pages/student/requests/call_off.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Call Off</a>
+                        <a href="/pages/student/requests/interschool_transfer.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Inter‑school Transfer</a>
+                        <a href="/pages/student/requests/defer.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Defer</a>
+                        <a href="/pages/student/requests/resumption.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Resumption of Studies</a>
+                        <a href="/pages/student/requests/withdrawal.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Withdrawal</a>
+                        <a href="/pages/student/requests/supp_exam.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Supp/Retake/Special Exam</a>
+                    </div>
+                </div>
+
+                <!-- Library -->
+                <div class="accordion-item">
+                    <button class="w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg hover:bg-white/10" onclick="toggleAccordion(this)">
+                        <span class="flex items-center space-x-3"><i class="fas fa-book w-5 text-center"></i><span>Library</span></span>
+                        <i class="accordion-arrow fas fa-chevron-right text-xs"></i>
+                    </button>
+                    <div class="accordion-content pl-9 space-y-1 mt-1">
+                        <a href="/pages/student/library/research_room_booking.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Research Room Booking</a>
+                        <a href="/pages/student/library/book_acquisition.html" class="block py-1.5 text-sm text-emerald-100 hover:text-white">Book Acquisition</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="px-3 py-4 border-t border-emerald-700/40 mt-auto">
+                <button onclick="logout()" class="w-full flex items-center space-x-2 px-3 py-2.5 bg-red-500/20 hover:bg-red-500/30 text-white rounded-lg transition">
+                    <i class="fas fa-sign-out-alt"></i><span>Logout</span>
+                </button>
+            </div>
+        </aside>        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-6 overflow-y-auto w-full">
+            <button onclick="toggleSidebar()" class="md:hidden mb-4 bg-emerald-700 text-white px-3 py-2 rounded-lg shadow">
+                <i class="fas fa-bars"></i> Menu
+            </button>            <div class="bg-white rounded-2xl shadow-md p-5 md:p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4"><i class="fas fa-list-ul mr-2 text-emerald-600"></i>Fee Structure</h2>
+                <p class="text-gray-500">The fee structure for your programme will appear here.</p>
+            </div>        </main>    </div>
+    <script src="/assets/js/api.js"></script>
+    <script>
+        function toggleAccordion(button) {
+            const item = button.closest('.accordion-item');
+            item.classList.toggle('active');
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebarContainer');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && document.getElementById('sidebarContainer').classList.contains('-translate-x-full') === false && window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        });
+        function logout() { localStorage.clear(); window.location.href = '/index.html'; }
+    </script>
+</body>
+</html>
