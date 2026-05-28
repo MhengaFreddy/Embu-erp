@@ -111,7 +111,7 @@ class ExpenseList(Resource):
         return [{'id': e.id, 'description': e.description, 'amount': float(e.amount), 'category': e.category, 'date': str(e.date)} for e in expenses]
 EOF
 
-# --- students/__init__.py (FULL SUB‑MODULES) ---
+# --- students/__init__.py (FINAL – all sub‑modules included) ---
 cat > /app/app/api/students/__init__.py << 'EOF'
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
@@ -209,6 +209,94 @@ def pay_invoice():
     invoice.status = 'paid' if total_paid >= float(invoice.amount) else 'partial'
     db.session.commit()
     return jsonify({'message': 'Payment successful', 'paid': amount}), 201
+
+# ── NEW: Proforma Invoice ──
+@students_bp.route('/proforma', methods=['GET'])
+@jwt_required()
+def get_proforma():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    invoice = Invoice.query.filter_by(student_id=student.id).order_by(Invoice.id.desc()).first()
+    if not invoice:
+        return jsonify({'message': 'No invoice available'})
+    return jsonify({
+        'invoice_id': invoice.id,
+        'amount': float(invoice.amount),
+        'due_date': str(invoice.due_date),
+        'status': invoice.status,
+        'student_name': f'{student.first_name} {student.last_name}',
+        'admission_number': student.admission_number
+    })
+
+# ── NEW: My Payments (Receipts) ──
+@students_bp.route('/payments', methods=['GET'])
+@jwt_required()
+def get_my_payments():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    invoices = Invoice.query.filter_by(student_id=student.id).all()
+    payments = []
+    for inv in invoices:
+        for p in inv.payments:
+            payments.append({
+                'payment_id': p.id,
+                'invoice_id': inv.id,
+                'amount': float(p.amount),
+                'method': p.method,
+                'date': str(p.payment_date),
+                'reference': p.transaction_reference
+            })
+    return jsonify(payments)
+
+# ── NEW: Fee Structure ──
+@students_bp.route('/fee-structure', methods=['GET'])
+@jwt_required()
+def get_fee_structure():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    programme = None
+    enrollment = Enrollment.query.filter_by(student_id=student.id).first()
+    if enrollment and enrollment.unit and enrollment.unit.course:
+        programme = enrollment.unit.course.name
+    structure = {
+        'programme': programme or 'General',
+        'tuition': 40000,
+        'library': 3000,
+        'activities': 2000,
+        'hostel': 10000,
+        'total': 55000
+    }
+    return jsonify(structure)
+
+# ── NEW: Semester Registration ──
+@students_bp.route('/register-semester', methods=['POST'])
+@jwt_required()
+def register_semester():
+    user_id = int(get_jwt_identity())
+    student = Student.query.filter_by(user_id=user_id).first()
+    if not student:
+        return jsonify({'error': 'Student not found'}), 404
+    semester = Semester.query.filter(Semester.start_date <= date.today(), Semester.end_date >= date.today()).first()
+    if not semester:
+        return jsonify({'error': 'No active semester'}), 400
+    enrollment = Enrollment.query.filter_by(student_id=student.id).first()
+    if not enrollment:
+        return jsonify({'error': 'No programme enrolment found – contact admin'}), 400
+    course = enrollment.unit.course
+    units = Unit.query.filter_by(course_id=course.id, semester_id=semester.id).all()
+    count = 0
+    for unit in units:
+        if not Enrollment.query.filter_by(student_id=student.id, unit_id=unit.id).first():
+            db.session.add(Enrollment(student_id=student.id, unit_id=unit.id, semester_id=semester.id, enrollment_date=date.today()))
+            count += 1
+    db.session.commit()
+    return jsonify({'message': f'Semester registration successful – {count} units enrolled'})
 
 # ── Academics ──
 @students_bp.route('/available-units', methods=['GET'])
