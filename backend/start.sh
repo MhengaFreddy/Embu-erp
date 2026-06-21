@@ -568,7 +568,7 @@ def get_students():
 def create_student():
     data = request.get_json()
     student_role = Role.query.filter_by(name='student').first()
-    email = f"{data['admission_number'].lower()}@embucollege.ac.ke"
+    email = f"{data['admission_number'].lower()}@student.college.edu"
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'Email already exists'}), 400
     user = User(email=email, password_hash=generate_password_hash('student123'), role_id=student_role.id)
