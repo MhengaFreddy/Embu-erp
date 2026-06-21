@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal - Embu College</title>
+    <title>Student Portal - Smart Campus</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50">
@@ -13,7 +13,7 @@
 
         <!-- Sidebar -->
         <aside id="sidebarContainer" class="w-64 bg-emerald-800 text-white p-4 fixed md:static h-full z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 overflow-y-auto">
-            <h1 class="text-xl font-bold mb-8">Embu College</h1>
+            <h1 class="text-xl font-bold mb-8">Smart Campus</h1>
             <nav class="space-y-2">
                 <a href="/student_portal.html" class="block py-2 px-3 rounded bg-emerald-900">Dashboard</a>
                 <a href="/pages/student/finance.html" class="block py-2 px-3 rounded hover:bg-emerald-700">Finance</a>
@@ -113,7 +113,7 @@
                 document.getElementById('admissionNo').textContent = profile.admission_number;
                 document.getElementById('enrollStatus').textContent = profile.enrollment_status;
                 document.getElementById('phone').textContent = profile.phone || '---';
-                document.getElementById('email').textContent = profile.admission_number + '@embucollege.ac.ke';
+                document.getElementById('email').textContent = profile.admission_number + '@college.edu';
             } catch (err) { console.error(err); }
         });
     </script>

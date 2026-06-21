@@ -14,9 +14,9 @@ with app.app_context():
     db.session.commit()
 
     admin_role = Role.query.filter_by(name='super_admin').first()
-    if not User.query.filter_by(email='admin@embucollege.ac.ke').first():
+    if not User.query.filter_by(email='admin@college.edu').first():
         admin = User(
-            email='admin@embucollege.ac.ke',
+            email='admin@college.edu',
             password_hash=generate_password_hash('admin123'),
             role_id=admin_role.id
         )

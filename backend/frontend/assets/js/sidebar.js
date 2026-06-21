@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function () {
         ]
     };
     var items = menus[role] || [];
-    var html = '<h1 class="text-xl font-bold mb-8">Embu College</h1><nav class="space-y-2">';
+    var html = '<h1 class="text-xl font-bold mb-8">Smart Campus</h1><nav class="space-y-2">';
     items.forEach(function (item) {
         html += '<a href="' + item.href + '" class="block py-2 px-3 rounded hover:bg-emerald-700">' + item.text + '</a>';
     });
